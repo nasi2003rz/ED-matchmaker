@@ -1,0 +1,19 @@
+node_modules
+dist
+coverage
+*.log
+*.tsbuildinfo
+
+# Keep environment variables out of version control
+.env
+
+/src/generated/prisma
+
+# User-uploaded files (local disk storage — Phase 1 only) — keep the
+# directory structure (multer's diskStorage needs it to already exist)
+# but not any uploaded content itself.
+/uploads/*
+!/uploads/.gitkeep
+!/uploads/avatars/
+/uploads/avatars/*
+!/uploads/avatars/.gitkeep

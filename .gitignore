@@ -1,0 +1,15 @@
+# backend/ and frontend/ each have their own .gitignore (node_modules,
+# build output, .env, generated Prisma client, uploads, etc.) — this file
+# only covers repo-root-level concerns.
+
+# Prisma CLI auto-installs its own reference-doc skill bundles into these
+# editor/agent-integration folders on first run — vendored tool docs, not
+# source we authored. Reinstalled automatically wherever the Prisma CLI
+# runs next (a fresh laptop clone will get its own copies on first use).
+backend/.agents/skills/prisma-*/
+backend/.claude/skills/prisma-*/
+backend/.windsurf/skills/prisma-*/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db

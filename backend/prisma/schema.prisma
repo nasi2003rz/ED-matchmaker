@@ -1,0 +1,635 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+  profile       Profile?
+  roles         UserRole[]
+  instructor    Instructor?
+  student       Student?
+  parent        Parent?
+  sentMessages  Message[]
+
+  @@map("users")
+}
+
+enum RoleName {
+  INSTRUCTOR
+  STUDENT
+  PARENT
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      RoleName
+  createdAt DateTime @default(now())
+
+  @@unique([userId, role])
+  @@map("user_roles")
+}
+
+// Cross-role fields shared by every account, regardless of which roles
+// (Instructor/Student/Parent) it holds. Created alongside the User.
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarUrl String?
+  phone     String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+enum DeliveryMode {
+  ONLINE
+  OFFLINE
+  BOTH
+}
+
+model Instructor {
+  id              String                 @id @default(uuid())
+  userId          String                 @unique
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutes      InstituteInstructor[]
+  experienceYears Int?
+  deliveryMode    DeliveryMode?
+  subjects        String[]               @default([])
+  locationId      String?
+  location        Location?              @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  categories      InstructorCategory[]
+  students        InstructorStudent[]
+  courses         Course[]
+  classes         Class[]
+  conversations   Conversation[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@map("instructors")
+}
+
+// Reference data (Section 8), plus the per-category custom field-definition
+// schema from Section 5.5: adding a category or a field to an existing one
+// is a data change (a new row here), never a schema migration.
+model Category {
+  id                String                     @id @default(uuid())
+  name              String                     @unique
+  slug              String                     @unique
+  instructors       InstructorCategory[]
+  fieldDefinitions  CategoryFieldDefinition[]
+  courses           Course[]
+  classes           Class[]
+  createdAt         DateTime                   @default(now())
+
+  @@map("categories")
+}
+
+enum FieldType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  SELECT
+  DATE
+}
+
+model CategoryFieldDefinition {
+  id         String    @id @default(uuid())
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  fieldKey   String
+  label      String
+  type       FieldType
+  required   Boolean   @default(false)
+  options    String[]  @default([])
+  order      Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@unique([categoryId, fieldKey])
+  @@map("category_field_definitions")
+}
+
+model InstructorCategory {
+  id           String     @id @default(uuid())
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([instructorId, categoryId])
+  @@map("instructor_categories")
+}
+
+model Location {
+  id          String       @id @default(uuid())
+  city        String
+  province    String?
+  country     String       @default("Iran")
+  instructors Instructor[]
+  classes     Class[]
+  createdAt   DateTime     @default(now())
+
+  @@unique([city, province])
+  @@map("locations")
+}
+
+model Student {
+  id          String               @id @default(uuid())
+  userId      String               @unique
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Parent?              @relation(fields: [parentId], references: [id], onDelete: SetNull)
+  instructors InstructorStudent[]
+  enrollments Enrollment[]
+  invitations Invitation[]
+  proposals   SessionProposal[]
+  attendances Attendance[]
+  submissions Submission[]
+  grades      Grade[]
+  conversations Conversation[]
+  payments    Payment[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([parentId])
+  @@map("students")
+}
+
+enum RosterStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+// An instructor's own roster of students they work with — independent of
+// any specific Class (Class/Enrollment come later in Class management).
+// "Add" only links an existing Student account (CLAUDE.md Section 5.3's
+// invitation flow, for students without an account yet, is a later step).
+model InstructorStudent {
+  id           String       @id @default(uuid())
+  instructorId String
+  instructor   Instructor   @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status       RosterStatus @default(ACTIVE)
+  note         String?
+  addedAt      DateTime     @default(now())
+  archivedAt   DateTime?
+
+  @@unique([instructorId, studentId])
+  @@map("instructor_students")
+}
+
+model Parent {
+  id            String         @id @default(uuid())
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  children      Student[]
+  conversations Conversation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("parents")
+}
+
+// An instructor may belong to several institutes and an institute has many
+// instructors — never collapse this to a 1:1 FK (CLAUDE.md Section 4).
+model Institute {
+  id          String                 @id @default(uuid())
+  name        String
+  instructors InstituteInstructor[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@map("institutes")
+}
+
+model InstituteInstructor {
+  id           String     @id @default(uuid())
+  instituteId  String
+  institute    Institute  @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([instituteId, instructorId])
+  @@map("institute_instructors")
+}
+
+// A lightweight parent "offering" (CLAUDE.md Section 4: Course has many
+// Classes). Created transparently alongside an instructor's first Class in
+// that offering — instructors only ever fill out one "create class" form.
+model Course {
+  id           String     @id @default(uuid())
+  title        String
+  description  String?
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  categoryId   String?
+  category     Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  classes      Class[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("courses")
+}
+
+enum ClassStatus {
+  DRAFT
+  ACTIVE
+  FULL
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum ClassType {
+  PRIVATE
+  GROUP
+}
+
+// The class's own shareable join link (CLAUDE.md Section 5.3) is reusable —
+// many people can join through the same /join/class/{classId} link, so this
+// tracks whether that link is switched on, not a single use-once ticket.
+enum InvitationLinkStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum Weekday {
+  SAT
+  SUN
+  MON
+  TUE
+  WED
+  THU
+  FRI
+}
+
+model Class {
+  id               String            @id @default(uuid())
+  courseId         String
+  course           Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructorId     String
+  instructor       Instructor        @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  name             String
+  description      String?
+  categoryId       String?
+  category         Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  locationId       String?
+  location         Location?         @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  deliveryMode     DeliveryMode?
+  classType        ClassType         @default(GROUP)
+  capacity         Int?
+  startDate        DateTime?
+  endDate          DateTime?
+  days             Weekday[]         @default([])
+  startTime        String?
+  endTime          String?
+  price            Int?
+  numberOfSessions Int?
+  status           ClassStatus       @default(DRAFT)
+  invitationStatus InvitationLinkStatus @default(ACTIVE)
+  attributes       ClassAttribute[]
+  enrollments      Enrollment[]
+  invitations      Invitation[]
+  sessions         ClassSession[]
+  proposals        SessionProposal[]
+  assignments      Assignment[]
+  grades           Grade[]
+  announcements    Announcement[]
+  payments         Payment[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([instructorId])
+  @@map("classes")
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+// Concrete, dated occurrences. GROUP classes get these auto-generated from
+// the recurring days/startTime/endTime pattern on Class (regenerated when
+// that pattern changes). PRIVATE classes never auto-generate sessions here —
+// CLAUDE.md Section 5.2 explicitly says not to force private lessons into a
+// fixed recurring schedule; their sessions only come from an accepted
+// SessionProposal below.
+model ClassSession {
+  id        String         @id @default(uuid())
+  classId   String
+  class     Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  startsAt  DateTime
+  endsAt    DateTime
+  status    SessionStatus  @default(SCHEDULED)
+  proposal    SessionProposal?
+  attendances Attendance[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([classId])
+  @@index([startsAt])
+  @@map("class_sessions")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+// One row per (session, student) — absence of a row means "not yet marked",
+// kept distinct from any of the four real statuses. The class-level
+// attendance rate (CLAUDE.md Section 5.2 / 8.2) is always computed from
+// these rows, never a manually-entered number.
+model Attendance {
+  id        String            @id @default(uuid())
+  sessionId String
+  session   ClassSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status    AttendanceStatus
+  markedAt  DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@unique([sessionId, studentId])
+  @@index([studentId])
+  @@map("attendances")
+}
+
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+// Private-lesson scheduling (CLAUDE.md Section 5.2): instructor proposes a
+// specific time to a specific enrolled student; the student accepts/rejects.
+// Accepting creates the confirmed ClassSession.
+model SessionProposal {
+  id          String         @id @default(uuid())
+  classId     String
+  class       Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  startsAt    DateTime
+  endsAt      DateTime
+  status      ProposalStatus @default(PENDING)
+  sessionId   String?        @unique
+  session     ClassSession?  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+  respondedAt DateTime?
+
+  @@index([classId])
+  @@index([studentId])
+  @@map("session_proposals")
+}
+
+// Category-specific values (CLAUDE.md Section 5.5), validated against that
+// category's CategoryFieldDefinition rows. `value` is always stored as text;
+// NUMBER/BOOLEAN/DATE are parsed against the field's declared type on read.
+model ClassAttribute {
+  id        String   @id @default(uuid())
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  fieldKey  String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([classId, fieldKey])
+  @@map("class_attributes")
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  CANCELLED
+}
+
+model Enrollment {
+  id          String           @id @default(uuid())
+  classId     String
+  class       Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status      EnrollmentStatus @default(ACTIVE)
+  enrolledAt  DateTime         @default(now())
+  cancelledAt DateTime?
+
+  @@unique([classId, studentId])
+  @@map("enrollments")
+}
+
+// An audit/history record of each accepted class invitation (Section 10:
+// "invitation revoked" etc. must eventually be auditable). Created at the
+// moment someone successfully joins via /join/class/{classId} — the link
+// itself is reusable (see InvitationLinkStatus on Class), so this is a log
+// of individual acceptances, not a per-recipient pending ticket.
+model Invitation {
+  id         String   @id @default(uuid())
+  classId    String
+  class      Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  acceptedAt DateTime @default(now())
+
+  @@unique([classId, studentId])
+  @@map("invitations")
+}
+
+// Homework (CLAUDE.md Section 5.2): assigned to a whole Class. Each actively
+// enrolled student's status (assigned/submitted/late/reviewed/missing) is
+// always derived from whether/when they have a Submission relative to
+// dueAt, never stored as a separate flag — same "computed, not manually
+// entered" approach used for Attendance rates (Section 8.2).
+model Assignment {
+  id          String       @id @default(uuid())
+  classId     String
+  class       Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  dueAt       DateTime?
+  submissions Submission[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([classId])
+  @@map("assignments")
+}
+
+// One row per (assignment, student), created when the student submits.
+// score/feedback here are the simple per-homework grading Section 5.2 asks
+// for ("review submissions, give grades/feedback"). The richer, multi-type
+// Grade entity (Section 8: numeric/letter/pass-fail/text) is a separate,
+// more general grade book built in a later step — not tied to homework.
+model Submission {
+  id           String     @id @default(uuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  content      String
+  submittedAt  DateTime   @default(now())
+  score        Float?
+  feedback     String?
+  reviewedAt   DateTime?
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
+  @@map("submissions")
+}
+
+enum GradeType {
+  NUMERIC
+  LETTER
+  PASS_FAIL
+  TEXT
+}
+
+// Standalone grade book (CLAUDE.md Section 5.2 / 8): independent of Homework
+// (Step 12's Assignment/Submission already carries its own simple
+// score/feedback). Each entry is one instructor-authored record against a
+// (class, student) — an exam score, class-participation letter grade, a
+// pass/fail project checkpoint, or free-text term feedback — not tied to a
+// specific Assignment. `value` is always stored as text and interpreted
+// per `type` (validated server-side on write), same approach as
+// ClassAttribute (Section 5.5).
+model Grade {
+  id        String    @id @default(uuid())
+  classId   String
+  class     Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title     String
+  type      GradeType
+  value     String
+  note      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([classId])
+  @@index([studentId])
+  @@map("grades")
+}
+
+// Class-wide broadcast (CLAUDE.md Section 5.2) — one-way, instructor to every
+// enrolled student. Deliberately no per-recipient read receipts: that level
+// of tracking belongs to direct Messages below, not this "utility layer, not
+// a social network" broadcast.
+model Announcement {
+  id        String   @id @default(uuid())
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([classId])
+  @@map("announcements")
+}
+
+// Direct messaging (CLAUDE.md Section 5.2): one standing thread per
+// instructor↔student or instructor↔parent relationship — not per class, and
+// not per-message ticket. Exactly one of studentId/parentId is set
+// (enforced in the service, same approach as Grade.value/type); the two
+// partial-unique constraints below each guarantee at most one thread per
+// (instructor, student) or (instructor, parent) pair.
+model Conversation {
+  id           String     @id @default(uuid())
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  studentId    String?
+  student      Student?   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parentId     String?
+  parent       Parent?    @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  messages     Message[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([instructorId, studentId])
+  @@unique([instructorId, parentId])
+  @@index([studentId])
+  @@index([parentId])
+  @@map("conversations")
+}
+
+// `readAt` unset/set derives the sent/read states (CLAUDE.md Section 5.2).
+// "Delivered" collapses into "sent" for now — Phase 1 has no push-delivery
+// receipts (Notifications, Step 18, is in-app only); a real `deliveredAt`
+// is a clean field to add later without a model change.
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderUserId   String
+  sender         User         @relation(fields: [senderUserId], references: [id], onDelete: Cascade)
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// Basic tuition tracking (CLAUDE.md Section 5.2) — explicitly "no accounting
+// system, no payment gateway yet" (Section 6), just recording what's owed
+// and what's come in. Multiple separate invoices per (class, student), e.g.
+// one per billing period, rather than a single running balance — matches
+// Section 8.3's awareness of recurring monthly tuition. `status` (paid/
+// partially paid/unpaid/overdue) and the remaining balance are always
+// derived from amount/paidAmount/dueDate, never stored (same "computed, not
+// manually entered" approach as Attendance/Homework — Section 8.2).
+model Payment {
+  id         String    @id @default(uuid())
+  classId    String
+  class      Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title      String
+  amount     Int
+  dueDate    DateTime?
+  paidAmount Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([classId])
+  @@index([studentId])
+  @@map("payments")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}

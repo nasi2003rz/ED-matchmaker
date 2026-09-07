@@ -1,0 +1,831 @@
+<title>پلن طراحی رابط — پلتفرم کلاس</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #fbfcfc;
+    --surface: #ffffff;
+    --surface-2: #f3f6f5;
+    --ink: #17201e;
+    --ink-2: #56605e;
+    --ink-3: #808b89;
+    --line: #e3e8e7;
+    --line-strong: #d2dad8;
+    --accent: #0d9488;
+    --accent-ink: #0a6b62;
+    --accent-wash: #e6f4f2;
+    --ok: #15803d;
+    --ok-wash: #e7f3ec;
+    --warn: #b45309;
+    --warn-wash: #f6efe2;
+    --info: #1d4ed8;
+    --info-wash: #e8eefb;
+    --bad: #b91c1c;
+    --bad-wash: #f7e9e9;
+    --shadow: 0 1px 2px rgba(20,40,38,.04), 0 8px 24px -12px rgba(20,40,38,.12);
+    --maxw: 74ch;
+    --radius: 12px;
+  }
+  :root:not([data-theme="light"]) {
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0d1312;
+      --surface: #141c1b;
+      --surface-2: #1b2524;
+      --ink: #e9eeed;
+      --ink-2: #9fadaa;
+      --ink-3: #7c8a87;
+      --line: #28332f;
+      --line-strong: #35433f;
+      --accent: #2dd4bf;
+      --accent-ink: #6fe3d4;
+      --accent-wash: #103430;
+      --ok: #4ade80;
+      --ok-wash: #10321f;
+      --warn: #e2a13a;
+      --warn-wash: #33260f;
+      --info: #74a5f7;
+      --info-wash: #16233f;
+      --bad: #f0736d;
+      --bad-wash: #351917;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0d1312;
+    --surface: #141c1b;
+    --surface-2: #1b2524;
+    --ink: #e9eeed;
+    --ink-2: #9fadaa;
+    --ink-3: #7c8a87;
+    --line: #28332f;
+    --line-strong: #35433f;
+    --accent: #2dd4bf;
+    --accent-ink: #6fe3d4;
+    --accent-wash: #103430;
+    --ok: #4ade80;
+    --ok-wash: #10321f;
+    --warn: #e2a13a;
+    --warn-wash: #33260f;
+    --info: #74a5f7;
+    --info-wash: #16233f;
+    --bad: #f0736d;
+    --bad-wash: #351917;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Vazirmatn", ui-sans-serif, system-ui, "Segoe UI", Tahoma, sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+    font-feature-settings: "ss01";
+  }
+  .doc { direction: rtl; }
+
+  code, .mono {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .86em;
+    direction: ltr;
+    unicode-bidi: embed;
+  }
+
+  a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+  /* ---------- shell ---------- */
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0 clamp(18px, 5vw, 44px);
+  }
+  header.masthead {
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--surface-2), var(--ground));
+  }
+  .masthead .wrap { padding-block: clamp(38px, 8vw, 68px) clamp(26px, 5vw, 40px); }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: .74rem; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+  .eyebrow::before {
+    content: ""; width: 22px; height: 2px; background: var(--accent); display: block;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 5.5vw, 3rem);
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+    margin: .5rem 0 .4rem;
+  }
+  .lede {
+    font-size: clamp(1rem, 2.4vw, 1.16rem);
+    color: var(--ink-2);
+    max-width: 60ch;
+    margin: 0;
+  }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 8px 10px;
+    margin-top: 22px;
+  }
+  .meta .tag {
+    font-size: .78rem;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    color: var(--ink-2);
+    padding: 4px 11px;
+    border-radius: 999px;
+  }
+  .meta .tag b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- section nav ---------- */
+  nav.toc {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav.toc .wrap {
+    display: flex; gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-block: 9px;
+  }
+  nav.toc .wrap::-webkit-scrollbar { display: none; }
+  nav.toc a {
+    flex: 0 0 auto;
+    font-size: .82rem;
+    font-weight: 500;
+    color: var(--ink-2);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+    transition: background .15s, color .15s;
+  }
+  nav.toc a:hover { color: var(--ink); background: var(--surface-2); }
+
+  /* ---------- generic section ---------- */
+  section { padding-block: clamp(38px, 7vw, 60px); border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: 0; }
+  .s-head { margin-bottom: 26px; }
+  .s-num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .8rem; color: var(--accent-ink); font-weight: 500;
+  }
+  h2 {
+    font-size: clamp(1.35rem, 3.6vw, 1.8rem);
+    font-weight: 700;
+    letter-spacing: -.01em;
+    margin: 4px 0 0;
+    text-wrap: balance;
+  }
+  .s-head p { color: var(--ink-2); margin: 8px 0 0; max-width: var(--maxw); }
+  h3 {
+    font-size: 1.02rem;
+    font-weight: 600;
+    margin: 30px 0 12px;
+    color: var(--ink);
+  }
+  p { max-width: var(--maxw); }
+
+  /* ---------- audit ---------- */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+  .chip {
+    font-size: .8rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 5px 10px;
+    color: var(--ink-2);
+  }
+  .chip.mono { direction: ltr; }
+
+  ol.gaps { list-style: none; counter-reset: g; margin: 18px 0 0; padding: 0; display: grid; gap: 10px; }
+  ol.gaps li {
+    counter-increment: g;
+    display: grid; grid-template-columns: auto 1fr; gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-inline-start: 3px solid var(--bad);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  ol.gaps li::before {
+    content: counter(g);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 600;
+    font-size: .85rem;
+    color: var(--bad);
+    background: var(--bad-wash);
+    width: 26px; height: 26px;
+    display: grid; place-items: center;
+    border-radius: 7px;
+  }
+  ol.gaps li p { margin: 0; max-width: none; font-size: .92rem; }
+  ol.gaps li b { font-weight: 600; }
+
+  /* ---------- principle grid ---------- */
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(248px, 1fr)); gap: 12px; }
+  .pr {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 15px 16px;
+  }
+  .pr h4 { margin: 0 0 4px; font-size: .95rem; font-weight: 600; }
+  .pr p { margin: 0; font-size: .87rem; color: var(--ink-2); max-width: none; }
+
+  /* ---------- design system ---------- */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 6px; }
+  .sw {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .sw .cap { height: 58px; display: block; }
+  .sw .lbl { padding: 8px 11px; font-size: .78rem; }
+  .sw .lbl b { display: block; font-weight: 600; margin-bottom: 1px; }
+  .sw .lbl span { color: var(--ink-3); }
+  .sw .lbl .use { color: var(--ink-2); }
+
+  .scale { margin-top: 6px; display: grid; gap: 6px; }
+  .scale div { display: flex; align-items: baseline; gap: 14px; border-bottom: 1px dashed var(--line); padding-bottom: 6px; }
+  .scale .k { font-family: "JetBrains Mono", monospace; font-size: .72rem; color: var(--ink-3); flex: 0 0 96px; direction: ltr; }
+  .scale .d1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -.01em; }
+  .scale .d2 { font-size: 1.35rem; font-weight: 700; }
+  .scale .d3 { font-size: 1.05rem; font-weight: 600; }
+  .scale .d4 { font-size: .95rem; }
+  .scale .d5 { font-size: .82rem; color: var(--ink-2); }
+
+  ul.prim { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+  ul.prim li {
+    display: grid; grid-template-columns: minmax(140px, auto) 1fr; gap: 14px;
+    font-size: .89rem;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  ul.prim li:last-child { border-bottom: 0; }
+  ul.prim code { color: var(--accent-ink); }
+  ul.prim span { color: var(--ink-2); }
+
+  /* ---------- nav mockups ---------- */
+  .navs { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 6px; }
+  .phone {
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 18px;
+    padding: 12px;
+    box-shadow: var(--shadow);
+  }
+  .phone .role {
+    font-size: .8rem; font-weight: 600; color: var(--accent-ink);
+    padding: 2px 4px 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .phone .role::before { content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--accent); }
+  .tabbar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    padding: 8px 4px;
+  }
+  .tabbar .t {
+    display: grid; justify-items: center; gap: 4px;
+    font-size: .62rem;
+    color: var(--ink-3);
+    padding: 2px 0;
+  }
+  .tabbar .t svg { width: 20px; height: 20px; }
+  .tabbar .t.on { color: var(--accent-ink); font-weight: 600; }
+  .tabbar .t.on svg { color: var(--accent); }
+
+  .routemap {
+    margin-top: 22px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 4px 2px;
+    overflow-x: auto;
+  }
+  .routemap pre {
+    margin: 0;
+    padding: 16px 18px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: .78rem;
+    line-height: 1.9;
+    direction: ltr;
+    color: var(--ink-2);
+    white-space: pre;
+  }
+  .routemap pre b { color: var(--ink); font-weight: 600; }
+  .routemap pre i { color: var(--accent-ink); font-style: normal; }
+
+  /* ---------- four states ---------- */
+  .states { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 6px; }
+  .st { border: 1px solid var(--line); border-radius: var(--radius); padding: 15px 16px; background: var(--surface); }
+  .st .tag { font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .st h4 { margin: 8px 0 5px; font-size: .96rem; }
+  .st p { margin: 0; font-size: .86rem; color: var(--ink-2); max-width: none; }
+  .st.load { border-top: 3px solid var(--ink-3); }
+  .st.load .tag { color: var(--ink-3); }
+  .st.empty { border-top: 3px solid var(--accent); }
+  .st.empty .tag { color: var(--accent-ink); }
+  .st.err { border-top: 3px solid var(--bad); }
+  .st.err .tag { color: var(--bad); }
+  .st.ok { border-top: 3px solid var(--ok); }
+  .st.ok .tag { color: var(--ok); }
+
+  /* ---------- table ---------- */
+  .tablewrap { overflow-x: auto; margin-top: 6px; border: 1px solid var(--line); border-radius: var(--radius); }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 520px; }
+  thead th {
+    text-align: start;
+    font-weight: 600;
+    font-size: .78rem;
+    color: var(--ink-2);
+    background: var(--surface-2);
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--line-strong);
+    white-space: nowrap;
+  }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody td:first-child { font-weight: 600; white-space: nowrap; }
+  .step {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .74rem;
+    background: var(--accent-wash);
+    color: var(--accent-ink);
+    padding: 2px 7px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  /* ---------- waves ---------- */
+  ol.waves { list-style: none; counter-reset: w -1; padding: 0; margin: 6px 0 0; display: grid; gap: 0; }
+  ol.waves li {
+    counter-increment: w;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 18px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  ol.waves li:last-child { border-bottom: 0; }
+  ol.waves li::before {
+    content: "موج " counter(w);
+    font-size: .74rem;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent-wash);
+    border-radius: 8px;
+    padding: 6px 10px;
+    height: max-content;
+    white-space: nowrap;
+  }
+  ol.waves h4 { margin: 2px 0 6px; font-size: 1rem; font-weight: 600; }
+  ol.waves p { margin: 0; font-size: .89rem; color: var(--ink-2); max-width: none; }
+  ol.waves .maps { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  ol.waves .maps span {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .72rem;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-2);
+    border-radius: 6px;
+    padding: 2px 7px;
+  }
+
+  /* ---------- flows / next ---------- */
+  .flow {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-top: 12px;
+  }
+  .flow h4 { margin: 0 0 8px; font-size: .92rem; }
+  .flow p { margin: 0; font-size: .88rem; color: var(--ink-2); max-width: none; }
+  .flow .chain { direction: rtl; font-size: .86rem; line-height: 2.1; }
+  .flow .chain b { color: var(--accent-ink); font-weight: 600; }
+
+  .next {
+    margin-top: 20px;
+    background: var(--accent-wash);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+  .next h4 { margin: 0 0 4px; color: var(--accent-ink); font-size: 1rem; }
+  .next p { margin: 0; font-size: .92rem; color: var(--ink); max-width: none; }
+
+  footer.foot {
+    padding: 26px 0 40px;
+    color: var(--ink-3);
+    font-size: .8rem;
+  }
+  footer.foot .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+  /* ---------- theme toggle ---------- */
+  .themebtn {
+    position: fixed; inset-block-start: 12px; inset-inline-end: 12px; z-index: 40;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    color: var(--ink-2);
+    border-radius: 999px;
+    padding: 7px 13px;
+    font-family: inherit;
+    font-size: .76rem;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+  .themebtn:hover { color: var(--ink); }
+  .themebtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  a:focus-visible, nav.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+  @media (max-width: 560px) {
+    ul.prim li, .flow .chain { grid-template-columns: 1fr; }
+    ol.gaps li { grid-template-columns: 1fr; }
+    ol.gaps li::before { width: max-content; padding-inline: 10px; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="ic" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></g>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-cap" viewBox="0 0 24 24"><path d="M12 4 2 9l10 5 10-5-10-5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M6 11.5V17c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-5.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 5.5a3.4 3.4 0 0 1 0 6.8M18.5 14c2 .8 3.5 2.7 3.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.7 7.1L4 21l1.9-5.2A8 8 0 1 1 21 12Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h13a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 17.5A2 2 0 0 1 6 16h13" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v10h14V10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<button class="themebtn" id="themebtn" type="button" aria-label="تغییر پوسته">پوسته: خودکار</button>
+
+<div class="doc">
+<header class="masthead">
+  <div class="wrap">
+    <span class="eyebrow">فاز ۱ — Instructor OS</span>
+    <h1>پلن طراحی رابط کاربری</h1>
+    <p class="lede">
+      سند مرجع UI/UX برای فاز ۱ پلتفرم کلاس و دوره — از سیستم طراحی و ناوبری تا مشخصات صفحه‌ها و برنامه‌ی اجرایی موج‌به‌موج.
+    </p>
+    <div class="meta">
+      <span class="tag">مبنا: <b>CLAUDE.md §5، §7، §13، §14</b></span>
+      <span class="tag">استک: <b>Next.js 16 · Tailwind v4 · shadcn/base-ui</b></span>
+      <span class="tag">فارسی‌محور · <b>RTL</b> · PWA</span>
+      <span class="tag">سند کامل: <b>docs/ui-ux-plan.md</b></span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="فهرست">
+  <div class="wrap">
+    <a href="#audit">وضعیت فعلی</a>
+    <a href="#principles">اصول</a>
+    <a href="#system">سیستم طراحی</a>
+    <a href="#nav">ناوبری</a>
+    <a href="#patterns">الگوهای تعامل</a>
+    <a href="#screens">صفحه‌به‌صفحه</a>
+    <a href="#roadmap">برنامه‌ی اجرایی</a>
+    <a href="#next">گام بعد</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <section id="audit">
+    <div class="s-head">
+      <span class="s-num">01</span>
+      <h2>وضعیت فعلی</h2>
+      <p>ممیزی مخزن: زیرساخت خوب چیده شده، اما پوسته و نقش‌های دانش‌آموز/والد هنوز خالی‌اند.</p>
+    </div>
+
+    <h3>چه چیزی هست</h3>
+    <div class="chips">
+      <span class="chip">توکن‌های رنگ و شعاع در globals.css</span>
+      <span class="chip">۱۶ کامپوننت پایه (card, table, dialog, tabs…)</span>
+      <span class="chip">فونت Vazirmatn · کل اپ RTL</span>
+      <span class="chip">احراز هویت + نقش چندگانه</span>
+      <span class="chip mono">/classes · /students · /join/class/[id]</span>
+      <span class="chip">گام‌های ۱–۹ فهرست §12 انجام‌شده</span>
+    </div>
+
+    <h3>شکاف‌های ساختاری که این پلن حل می‌کند</h3>
+    <ol class="gaps">
+      <li><p><b>هیچ App Shell یا ناوبری‌ای نیست.</b> ناوبری «۵ تبه»ی §7 اصلاً پیاده نشده؛ هر صفحه یک <code>div</code> وسط‌چین با <code>dir="rtl"</code> تکراری است.</p></li>
+      <li><p><b>فقط نقش مربی رابط دارد.</b> دانش‌آموز و والد جز صفحه‌ی پیوستن و انتخاب نقش هیچ صفحه‌ای ندارند.</p></li>
+      <li><p><b>حالت تاریک عملاً غیرفعال است.</b> <code>next-themes</code> فقط در sonner import شده؛ <code>ThemeProvider</code> در layout نیست.</p></li>
+      <li><p><b>Layout Primitive مشترک وجود ندارد.</b> عرض صفحه، پدینگ، عنوان و اکشن هدر همه‌جا کپی شده‌اند.</p></li>
+      <li><p><b>داشبورد مربی خالی است.</b> صفحه‌ی <code>/</code> فقط چند لینک است، نه ویجت‌های §7 (کلاس امروز، شهریه‌ی پرداخت‌نشده…).</p></li>
+      <li><p><b><code>/style-guide</code> موقت است.</b> باید جای خود را به یک صفحه‌ی زنده‌ی سیستم طراحی بدهد.</p></li>
+    </ol>
+  </section>
+
+  <section id="principles">
+    <div class="s-head">
+      <span class="s-num">02</span>
+      <h2>اصول طراحی</h2>
+      <p>جمع‌بندی CLAUDE.md §14 و §15 به تصمیم‌های عملی.</p>
+    </div>
+    <div class="grid2">
+      <div class="pr"><h4>موبایل‌محور / PWA</h4><p>همه‌چیز اول برای عرض ۳۶۰–۴۲۰px؛ دسکتاپ «بسط» است. نصب‌شدنی، پوسته‌ی کش‌شده، تخریب محترمانه در آفلاین.</p></div>
+      <div class="pr"><h4>RTL و فارسی‌محور</h4><p>راست‌به‌چپ پیش‌فرض. اعداد فارسی در نمایش، ارقام لاتین در ورودی فنی. آیکون‌های جهت‌دار mirror.</p></div>
+      <div class="pr"><h4>کمترین بار شناختی</h4><p>هر صفحه یک هدف اصلی و حداکثر یک اکشن اولیه. فرم‌ها کوتاه.</p></div>
+      <div class="pr"><h4>نه داشبورد سازمانی</h4><p>مخاطب مربیِ غیرفنی است. کارت بزرگ، دکمه‌ی واضح، بدون جدول متراکم در موبایل، بدون اصطلاح فنی.</p></div>
+      <div class="pr"><h4>کمترین کلیک</h4><p>ثبت حضور، دعوت و افزودن دانش‌آموز در ۱ تا ۲ تعامل. کپی لینک دعوت = یک دکمه.</p></div>
+      <div class="pr"><h4>حلقه‌ی رشد در مرکز</h4><p>لینک دعوت (§5.3) برجسته‌ترین اکشن سطح کلاس است، نه مخفی در تب سوم.</p></div>
+    </div>
+  </section>
+
+  <section id="system">
+    <div class="s-head">
+      <span class="s-num">03</span>
+      <h2>سیستم طراحی</h2>
+      <p>توکن‌های فعلی globals.css حفظ می‌شوند؛ فقط نگاشت مرکزی وضعیت‌ها و Primitiveها اضافه می‌شود.</p>
+    </div>
+
+    <h3>رنگ — فقط برای معنا، نه تزئین</h3>
+    <div class="swatches">
+      <div class="sw"><span class="cap" style="background:var(--accent)"></span><span class="lbl"><b>primary</b> <span class="mono">teal</span><br><span class="use">اکشن اولیه، لینک، تب فعال، فوکوس</span></span></div>
+      <div class="sw"><span class="cap" style="background:var(--ok)"></span><span class="lbl"><b>success</b><br><span class="use">حاضر · پرداخت‌شده · بررسی‌شده</span></span></div>
+      <div class="sw"><span class="cap" style="background:var(--warn)"></span><span class="lbl"><b>warning</b><br><span class="use">تأخیر · پرداخت جزئی · سررسید نزدیک</span></span></div>
+      <div class="sw"><span class="cap" style="background:var(--bad)"></span><span class="lbl"><b>destructive</b><br><span class="use">غایب · سررسیدگذشته · لغو · حذف</span></span></div>
+      <div class="sw"><span class="cap" style="background:var(--info)"></span><span class="lbl"><b>info</b><br><span class="use">موجه · تغییر برنامه · اطلاع خنثی</span></span></div>
+      <div class="sw"><span class="cap" style="background:var(--ink-3)"></span><span class="lbl"><b>muted</b><br><span class="use">پیش‌نویس · بایگانی · در انتظار</span></span></div>
+    </div>
+    <p style="font-size:.86rem;color:var(--ink-2);margin-top:12px">
+      نگاشت مرکزی <code>status → {token, label, icon}</code> در <code>src/lib/status.ts</code> تا رنگ و برچسب وضعیت‌ها در حضور، پرداخت، تکلیف و کلاس یک‌جا مدیریت شود.
+    </p>
+
+    <h3>مقیاس تایپوگرافی — Vazirmatn</h3>
+    <div class="scale">
+      <div><span class="k">page / 700</span><span class="d1">عنوان صفحه</span></div>
+      <div><span class="k">section / 700</span><span class="d2">عنوان بخش</span></div>
+      <div><span class="k">card / 600</span><span class="d3">عنوان کارت</span></div>
+      <div><span class="k">body / 400</span><span class="d4">متن اصلی — خط‌کرسی سخاوتمند برای خوانایی فارسی</span></div>
+      <div><span class="k">meta / 400</span><span class="d5">متن فرعی و برچسب</span></div>
+    </div>
+
+    <h3>Layout Primitives — افزودنی (پایه‌ی رفع شکاف ۱ و ۴)</h3>
+    <ul class="prim">
+      <li><code>&lt;AppShell&gt;</code><span>پوسته‌ی احرازشده: ناوبری واکنش‌گرا، Header نازک، ناحیه‌ی محتوا با max-w، سوییچ نقش، Toaster</span></li>
+      <li><code>&lt;PageHeader&gt;</code><span>عنوان صفحه + اکشن اولیه + بازگشت (آیکون mirror-شده)</span></li>
+      <li><code>&lt;Section&gt;</code><span>بلوک محتوایی با عنوان اختیاری؛ جایگزین divهای دست‌ساز</span></li>
+      <li><code>EmptyState · ErrorState</code><span>حالت خالی سازنده و خطای بارگذاری با تلاش مجدد</span></li>
+      <li><code>ListSkeleton · StatCard</code><span>اسکلت هم‌شکل محتوا و کارت آمار داشبورد</span></li>
+      <li><code>StatusBadge</code><span>برچسب واحد وضعیت از lib/status.ts</span></li>
+      <li><code>Sheet · AlertDialog</code><span>فرم کوتاه اکشن (Drawer پایین موبایل) و تأیید اکشن مخرب</span></li>
+      <li><code>ThemeToggle · Num</code><span>روشن/تاریک/سیستم و نمایش عدد فارسی با واحد</span></li>
+    </ul>
+  </section>
+
+  <section id="nav">
+    <div class="s-head">
+      <span class="s-num">04</span>
+      <h2>معماری اطلاعات و ناوبری</h2>
+      <p>Bottom Tab در موبایل، Sidebar راست در دسکتاپ (≥ lg). ناوبری با نقش فعال عوض می‌شود — تب‌ها ادغام نمی‌شوند.</p>
+    </div>
+
+    <div class="navs">
+      <div class="phone">
+        <div class="role">مربی</div>
+        <div class="tabbar">
+          <span class="t on"><svg><use href="#i-grid"/></svg>داشبورد</span>
+          <span class="t"><svg><use href="#i-cap"/></svg>کلاس‌ها</span>
+          <span class="t"><svg><use href="#i-users"/></svg>دانش‌آموزان</span>
+          <span class="t"><svg><use href="#i-cal"/></svg>تقویم</span>
+          <span class="t"><svg><use href="#i-chat"/></svg>پیام‌ها</span>
+          <span class="t"><svg><use href="#i-dots"/></svg>بیشتر</span>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="role">دانش‌آموز</div>
+        <div class="tabbar">
+          <span class="t on"><svg><use href="#i-home"/></svg>خانه</span>
+          <span class="t"><svg><use href="#i-cap"/></svg>کلاس‌های من</span>
+          <span class="t"><svg><use href="#i-cal"/></svg>تقویم</span>
+          <span class="t"><svg><use href="#i-book"/></svg>تکالیف</span>
+          <span class="t"><svg><use href="#i-chat"/></svg>پیام‌ها</span>
+          <span class="t"><svg><use href="#i-dots"/></svg>بیشتر</span>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="role">والد</div>
+        <div class="tabbar">
+          <span class="t on"><svg><use href="#i-home"/></svg>خانه</span>
+          <span class="t"><svg><use href="#i-users"/></svg>فرزندان</span>
+          <span class="t"><svg><use href="#i-cal"/></svg>تقویم</span>
+          <span class="t"><svg><use href="#i-chat"/></svg>پیام‌ها</span>
+          <span class="t"><svg><use href="#i-dots"/></svg>بیشتر</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="routemap">
+<pre><b>عمومی</b>
+  /                     <i>لندینگ مهمان یا ریدایرکت به داشبورد نقش فعال</i>
+  /login  /register     <i>?next= را برای حلقه‌ی دعوت حفظ می‌کنند</i>
+  /join/class/[id]       <i>پیش‌نمایش عمومی کلاس + پیوستن</i>
+
+<b>مربی</b>
+  /dashboard
+  /classes  /classes/new  /classes/[id]   <i>تب: نمای‌کلی·دانش‌آموزان·حضور·تکالیف·پرداخت·دعوت·ویرایش</i>
+  /classes/[id]/sessions/[sessionId]      <i>ثبت حضور جلسه، بازبینی تکلیف</i>
+  /students  /students/[id]               <i>تاریخچه، کلاس‌ها، پرداخت، یادداشت</i>
+  /calendar   /messages/[conversationId]
+
+<b>دانش‌آموز / والد</b>
+  /home   /my-classes/[id]
+  /homework/[assignmentId]   /calendar   /messages/*
+  /children  /children/[id]  <i>(والد)</i>
+  /more/*   <i>پروفایل · نقش · تم · مؤسسه · خروج</i></pre>
+    </div>
+    <p style="font-size:.86rem;color:var(--ink-2);margin-top:12px">
+      گیت نقش تکراری <code>useEffect + router.replace</code> → یک <code>useRequireRole()</code>. این فقط UX است؛ مجوز واقعی سمت سرور می‌ماند (§9).
+    </p>
+  </section>
+
+  <section id="patterns">
+    <div class="s-head">
+      <span class="s-num">05</span>
+      <h2>الگوهای تعامل</h2>
+      <p>هر لیست و نما باید صریحاً چهار حالت داشته باشد (CLAUDE.md §13).</p>
+    </div>
+    <div class="states">
+      <div class="st load"><span class="tag">Loading</span><h4>اسکلت هم‌شکل محتوا</h4><p>نه اسپینر تمام‌صفحه. پوسته‌ی ناوبری بلافاصله رندر می‌شود.</p></div>
+      <div class="st empty"><span class="tag">Empty</span><h4>حالت خالی سازنده</h4><p>آیکون + یک جمله + دکمه‌ی اکشن («اولین کلاس را بساز»). لحن تشویقی، نه خطا.</p></div>
+      <div class="st err"><span class="tag">Error</span><h4>خطای قابل‌فهم</h4><p>ErrorState درون‌خطی با تلاش مجدد برای بارگذاری؛ toast برای خطای اکشن. پیام فارسی، بدون کد فنی.</p></div>
+      <div class="st ok"><span class="tag">Content</span><h4>محتوا + به‌روزرسانی خوش‌بینانه</h4><p>مثل toggle آرشیو فعلی؛ نتیجه با toast تأیید می‌شود.</p></div>
+    </div>
+    <h3>لایه‌بندی روی صفحه</h3>
+    <ul class="prim">
+      <li><code>Dialog</code><span>تأیید کوتاه، فرم تک‌فیلدی (افزودن دانش‌آموز)</span></li>
+      <li><code>Sheet / Drawer</code><span>فرم ۲–۵ فیلدی: ثبت پرداخت، دادن نمره، پیشنهاد جلسه‌ی خصوصی</span></li>
+      <li><code>صفحه‌ی کامل</code><span>جریان چندمرحله‌ای یا داده‌ی سنگین</span></li>
+      <li><code>AlertDialog</code><span>فقط اکشن مخرب: حذف کلاس، لغو ثبت‌نام، باطل‌کردن لینک دعوت</span></li>
+    </ul>
+  </section>
+
+  <section id="screens">
+    <div class="s-head">
+      <span class="s-num">06</span>
+      <h2>مشخصات صفحه‌به‌صفحه</h2>
+      <p>۱۶ حوزه‌ی رابط، نگاشت‌شده به گام‌های فهرست اجرای §12.</p>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>حوزه</th><th>هدف و اجزای کلیدی</th><th>گام §12</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Onboarding مربی</td><td>ثبت‌نام ← ساخت اولین کلاس ← صفحه‌ی موفقیت با لینک دعوت آماده. پروفایل کامل مؤخر و اختیاری (Nudge).</td><td><span class="step">۶</span></td></tr>
+          <tr><td>داشبورد مربی</td><td>«امروز چه دارم؟» کلاس‌های امروز + ثبت حضور · StatCardها (دانش‌آموز، تکلیف در انتظار، شهریه، پیام) · جلسات هفته.</td><td><span class="step">۱۶</span></td></tr>
+          <tr><td>کلاس‌ها</td><td>لیست کارتی با «X از Y نفر — Z خالی» از داده‌ی واقعی Enrollment · فیلتر وضعیت · جست‌وجو.</td><td><span class="step">۸</span></td></tr>
+          <tr><td>ساخت/ویرایش کلاس</td><td>فرم تک‌ستونه با Section · فیلد اختصاصی دسته (داینامیک) · ذخیره‌ی draft ← انتشار.</td><td><span class="step">۸</span></td></tr>
+          <tr><td>جزئیات کلاس</td><td>تب‌ها: نمای‌کلی · دانش‌آموزان · حضور · تکالیف · پرداخت · دعوت · ویرایش (اسکرول افقی در موبایل).</td><td><span class="step">۸+</span></td></tr>
+          <tr><td>دانش‌آموزان مربی</td><td>تب فعال/بایگانی · جدول → لیست کارتی در موبایل · افزودن با ایمیل · <code>/students/[id]</code> با تاریخچه.</td><td><span class="step">۷</span></td></tr>
+          <tr><td>تقویم</td><td>روز/هفته/ماه · موبایل پیش‌فرض تایم‌لاین هفتگی · جلسه‌ی خصوصی: پیشنهاد ← پذیرش/رد ← تأیید · تقویم خانوادگی والد.</td><td><span class="step">۱۰</span></td></tr>
+          <tr><td>حضور و غیاب</td><td>سگمنت ۴تایی حاضر/غایب/تأخیر/موجه · پیش‌فرض همه «حاضر»، فقط استثناها زده می‌شود · نرخ حضور جلسه و کلاس.</td><td><span class="step">۱۱</span></td></tr>
+          <tr><td>تکالیف</td><td>ساخت در Sheet · وضعیت assigned/submitted/reviewed/late/missing · بازبینی: محتوا + بازخورد + نمره.</td><td><span class="step">۱۲</span></td></tr>
+          <tr><td>نمرات</td><td>عددی/حرفی/قبول-مردود/متنی — کامپوننت <code>GradeInput</code> · ماتریس دانش‌آموز×تکلیف · «نمرات اخیر» در خانه.</td><td><span class="step">۱۳</span></td></tr>
+          <tr><td>پیام‌ها</td><td>لایه‌ی ابزار، نه شبکه‌ی اجتماعی · اعلان کلاس یک‌طرفه + گفت‌وگوی مستقیم · وضعیت sent/delivered/read.</td><td><span class="step">۱۴</span></td></tr>
+          <tr><td>پرداخت‌های پایه</td><td>بدون درگاه/حسابداری · ردیف هر دانش‌آموز: مبلغ، پرداخت‌شده، مانده، وضعیت · «ثبت پرداخت» در Sheet.</td><td><span class="step">۱۵</span></td></tr>
+          <tr><td>داشبورد دانش‌آموز</td><td>کلاس بعدی برجسته · کلاس‌های امروز · تکالیف در انتظار · نمرات اخیر · پیام خوانده‌نشده.</td><td><span class="step">۱۶</span></td></tr>
+          <tr><td>داشبورد والد</td><td>سوییچر فرزند (آواتار) · بازاستفاده از ویجت‌های دانش‌آموز · تقویم خانوادگی · <code>/children</code>.</td><td><span class="step">۱۷</span></td></tr>
+          <tr><td>اعلان‌ها</td><td>آیکون زنگ در Header ← Sheet لیست · درون‌اپ در فاز ۱ · سرویس مشترک جداکوپل برای push/email بعدی.</td><td><span class="step">۱۸</span></td></tr>
+          <tr><td>عمومی و دعوت</td><td>پولیش <code>/join/class/[id]</code> با کامپوننت‌های جدید · لندینگ مهمان بدون جست‌وجوی عمومی کلاس (§8.1).</td><td><span class="step">۹</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="roadmap">
+    <div class="s-head">
+      <span class="s-num">07</span>
+      <h2>برنامه‌ی اجرایی</h2>
+      <p>شش موج، نگاشت‌شده به گام‌های ۱۰ به بعد فهرست §12. موج ۰ پیش‌نیاز اجباری هر ماژول بعدی است.</p>
+    </div>
+    <ol class="waves">
+      <li>
+        <div>
+          <h4>پایه</h4>
+          <p>ThemeProvider + سوییچ تم · AppShell/BottomNav/SidebarNav · PageHeader/Section · EmptyState/ErrorState/ListSkeleton/StatCard · lib/status.ts · useRequireRole · مهاجرت صفحات موجود به پوسته و حذف dir تکراری · ارتقای style-guide.</p>
+          <div class="maps"><span>تثبیت گام ۳</span></div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h4>داشبورد و تقویم</h4>
+          <p>داشبورد مربی واقعی با ویجت‌ها · صفحه‌ی پروفایل دانش‌آموز <code>/students/[id]</code> · تقویم روز/هفته/ماه + جریان جلسه‌ی خصوصی.</p>
+          <div class="maps"><span>گام ۱۰</span><span>گام ۱۶ (مربی)</span></div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h4>چرخه‌ی کلاس</h4>
+          <p>تب حضور + صفحه‌ی ثبت حضور جلسه · تب تکالیف + ساخت/بازبینی · GradeInput + نمای نمرات.</p>
+          <div class="maps"><span>گام ۱۱</span><span>گام ۱۲</span><span>گام ۱۳</span></div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h4>ارتباط و پول</h4>
+          <p>پیام‌ها: لیست + گفت‌وگو + اعلان کلاس · تب پرداخت + «ثبت پرداخت» · کارت شهریه‌ی دانش‌آموز.</p>
+          <div class="maps"><span>گام ۱۴</span><span>گام ۱۵</span></div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h4>تجربه‌ی دانش‌آموز و والد</h4>
+          <p>داشبورد دانش‌آموز · <code>/homework</code> + تحویل · داشبورد والد + سوییچر فرزند + تقویم خانوادگی.</p>
+          <div class="maps"><span>گام ۱۶</span><span>گام ۱۷</span></div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h4>اعلان‌ها و پولیش</h4>
+          <p>مرکز اعلان درون‌اپ + سرویس مشترک · بنر آفلاین/نصب PWA · ممیزی امنیت گیت‌های UI · پولیش حرکت/خالی/خطا · تست سرتاسری جریان‌های بحرانی.</p>
+          <div class="maps"><span>گام ۱۸</span><span>گام ۱۹</span><span>گام ۲۰</span><span>گام ۲۱</span></div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section id="next">
+    <div class="s-head">
+      <span class="s-num">08</span>
+      <h2>جریان‌های بحرانی و گام بعد</h2>
+      <p>این دو مسیر باید پیش از «شیپ» شدن هر ماژول، سرتاسری کار کنند (CLAUDE.md §5.1، §13).</p>
+    </div>
+    <div class="flow">
+      <h4>مربی</h4>
+      <p class="chain">ثبت‌نام ← پروفایل ← <b>ساخت کلاس</b> ← افزودن/دعوت دانش‌آموز ← حضور ← تکلیف ← بازبینی و نمره ← پیام ← رهگیری پرداخت</p>
+    </div>
+    <div class="flow">
+      <h4>دانش‌آموز / والد</h4>
+      <p class="chain">ثبت‌نام ← <b>پذیرش دعوت</b> ← دیدن برنامه و تکلیف ← تحویل تکلیف ← دیدن نمره و حضور ← دریافت پیام ← دیدن وضعیت پرداخت</p>
+    </div>
+    <div class="next">
+      <h4>گام بعدی: موج ۰ (پایه)</h4>
+      <p>بدون پوسته، Primitiveها و نگاشت وضعیت، هر ماژول بعدی چیدمان و حالت‌ها را دوباره کپی می‌کند. تعریف «انجام‌شده» برای هر صفحه: UI + API + DB + Authorization + Validation + Loading + Empty + Error + Mobile responsive + Tests.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>پلتفرم کلاس و دوره — فاز ۱ · Instructor OS</span>
+    <span>سند کامل: docs/ui-ux-plan.md</span>
+  </div>
+</footer>
+</div>
+
+<script>
+  (function () {
+    var btn = document.getElementById("themebtn");
+    var root = document.documentElement;
+    var modes = ["auto", "light", "dark"];
+    var labels = { auto: "پوسته: خودکار", light: "پوسته: روشن", dark: "پوسته: تاریک" };
+    var i = 0;
+    try {
+      var saved = localStorage.getItem("uiplan-theme");
+      if (saved && modes.indexOf(saved) > -1) i = modes.indexOf(saved);
+    } catch (e) {}
+    function apply() {
+      var m = modes[i];
+      if (m === "auto") root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", m);
+      btn.textContent = labels[m];
+      try { localStorage.setItem("uiplan-theme", m); } catch (e) {}
+    }
+    btn.addEventListener("click", function () {
+      i = (i + 1) % modes.length;
+      apply();
+    });
+    apply();
+  })();
+</script>
