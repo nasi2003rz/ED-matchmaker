@@ -1,7 +1,13 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateAssignmentDto } from './dto/create-assignment.dto.js';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto.js';
+import {
+  NOTIFICATION_EVENTS,
+  AssignmentCreatedEvent,
+  AssignmentReviewedEvent,
+} from '../notifications/events/notification-events.js';
 
 type HomeworkStatus = 'ASSIGNED' | 'SUBMITTED' | 'LATE' | 'REVIEWED' | 'MISSING';
 
@@ -17,7 +23,10 @@ function deriveStatus(dueAt: Date | null, submission: { submittedAt: Date; revie
 
 @Injectable()
 export class AssignmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   private async getInstructorId(userId: string): Promise<string> {
     const instructor = await this.prisma.instructor.findUnique({ where: { userId } });
@@ -57,7 +66,7 @@ export class AssignmentsService {
   // ---- Instructor side ----
 
   async create(userId: string, classId: string, dto: CreateAssignmentDto) {
-    await this.getOwnedClass(userId, classId);
+    const klass = await this.getOwnedClass(userId, classId);
     const assignment = await this.prisma.assignment.create({
       data: {
         classId,
@@ -66,6 +75,22 @@ export class AssignmentsService {
         dueAt: dto.dueAt ? new Date(dto.dueAt) : null,
       },
     });
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { classId, status: 'ACTIVE' },
+      select: { student: { select: { user: { select: { id: true } } } } },
+    });
+    this.eventEmitter.emit(
+      NOTIFICATION_EVENTS.ASSIGNMENT_CREATED,
+      new AssignmentCreatedEvent(
+        enrollments.map((e) => e.student.user.id),
+        assignment.title,
+        klass.name,
+        classId,
+        assignment.id,
+      ),
+    );
+
     return assignment;
   }
 
@@ -156,6 +181,15 @@ export class AssignmentsService {
       where: { id: submission.id },
       data: { score, feedback, reviewedAt: new Date() },
     });
+
+    const [assignment, student] = await Promise.all([
+      this.prisma.assignment.findUniqueOrThrow({ where: { id: assignmentId } }),
+      this.prisma.student.findUniqueOrThrow({ where: { id: studentId }, select: { userId: true } }),
+    ]);
+    this.eventEmitter.emit(
+      NOTIFICATION_EVENTS.ASSIGNMENT_REVIEWED,
+      new AssignmentReviewedEvent(student.userId, assignment.title, classId, assignmentId),
+    );
 
     return this.getDetail(userId, classId, assignmentId);
   }

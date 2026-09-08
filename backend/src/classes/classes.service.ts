@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ClassType, FieldType } from '../generated/prisma/enums.js';
 import type { CategoryFieldDefinitionModel } from '../generated/prisma/models.js';
@@ -12,6 +13,7 @@ import type { CreateClassDto } from './dto/create-class.dto.js';
 import type { UpdateClassDto } from './dto/update-class.dto.js';
 import type { CreateProposalDto } from './dto/create-proposal.dto.js';
 import { generateSessionDates } from './session-generator.js';
+import { NOTIFICATION_EVENTS, ScheduleChangedEvent } from '../notifications/events/notification-events.js';
 
 const CLASS_INCLUDE = {
   category: true,
@@ -22,7 +24,10 @@ const CLASS_INCLUDE = {
 
 @Injectable()
 export class ClassesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   private async getInstructorId(userId: string): Promise<string> {
     const instructor = await this.prisma.instructor.findUnique({ where: { userId } });
@@ -137,6 +142,7 @@ export class ClassesService {
 
     if (dto.locationId) await this.assertLocationExists(dto.locationId);
 
+    let scheduleChanged = false;
     await this.prisma.$transaction(async (tx) => {
       await tx.class.update({
         where: { id: classId },
@@ -180,6 +186,7 @@ export class ClassesService {
       const effectiveClassType = dto.classType ?? existing.classType;
 
       if (scheduleFieldsChanged) {
+        scheduleChanged = true;
         const now = new Date();
         await tx.classSession.deleteMany({
           where: { classId, status: 'SCHEDULED', startsAt: { gte: now } },
@@ -202,6 +209,21 @@ export class ClassesService {
         }
       }
     });
+
+    if (scheduleChanged) {
+      const enrollments = await this.prisma.enrollment.findMany({
+        where: { classId, status: 'ACTIVE' },
+        select: { student: { select: { user: { select: { id: true } } } } },
+      });
+      this.eventEmitter.emit(
+        NOTIFICATION_EVENTS.SCHEDULE_CHANGED,
+        new ScheduleChangedEvent(
+          enrollments.map((e) => e.student.user.id),
+          dto.name ?? existing.name,
+          classId,
+        ),
+      );
+    }
 
     return this.getOne(userId, classId);
   }

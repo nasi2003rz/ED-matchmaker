@@ -1,11 +1,16 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { NOTIFICATION_EVENTS, MessageNewEvent } from '../notifications/events/notification-events.js';
 
 type ParticipantKind = 'INSTRUCTOR' | 'STUDENT' | 'PARENT';
 
 @Injectable()
 export class ConversationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   // ---- Roster-relationship guards (server-side authorization — CLAUDE.md
   // Section 9: a conversation may only be started between people who
@@ -77,11 +82,32 @@ export class ConversationsService {
   }
 
   private async appendMessage(conversationId: string, senderUserId: string, content: string) {
+    const conversation = await this.prisma.conversation.findUniqueOrThrow({
+      where: { id: conversationId },
+      include: {
+        instructor: { include: { user: true } },
+        student: { include: { user: true } },
+        parent: { include: { user: true } },
+      },
+    });
+
     await this.prisma.message.create({ data: { conversationId, senderUserId, content } });
     await this.prisma.conversation.update({
       where: { id: conversationId },
       data: { updatedAt: new Date() },
     });
+
+    const isSenderInstructor = conversation.instructor.user.id === senderUserId;
+    const otherUser = conversation.student?.user ?? conversation.parent?.user;
+    const senderName = isSenderInstructor ? conversation.instructor.user.name : (otherUser?.name ?? '');
+    const recipientUserId = isSenderInstructor ? otherUser?.id : conversation.instructor.user.id;
+
+    if (recipientUserId) {
+      this.eventEmitter.emit(
+        NOTIFICATION_EVENTS.MESSAGE_NEW,
+        new MessageNewEvent(recipientUserId, senderName, conversationId),
+      );
+    }
   }
 
   // Resolves which of the caller's profiles (at most one is relevant) makes

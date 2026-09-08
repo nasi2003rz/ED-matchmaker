@@ -1,7 +1,9 @@
 import { BadRequestException, ConflictException, GoneException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UsersService } from '../users/users.service.js';
 import { RoleName } from '../generated/prisma/enums.js';
+import { NOTIFICATION_EVENTS, InvitationAcceptedEvent } from '../notifications/events/notification-events.js';
 
 const PREVIEW_INCLUDE = {
   category: true,
@@ -14,6 +16,7 @@ export class JoinService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async preview(classId: string) {
@@ -49,7 +52,10 @@ export class JoinService {
   async accept(userId: string, classId: string) {
     const klass = await this.prisma.class.findUnique({
       where: { id: classId },
-      include: { enrollments: { where: { status: 'ACTIVE' } } },
+      include: {
+        enrollments: { where: { status: 'ACTIVE' } },
+        instructor: { select: { userId: true } },
+      },
     });
     if (!klass) {
       throw new NotFoundException('این کلاس یافت نشد.');
@@ -94,6 +100,17 @@ export class JoinService {
         create: { classId, studentId: student.id },
       }),
     ]);
+
+    const joiningUser = await this.usersService.findById(userId);
+    this.eventEmitter.emit(
+      NOTIFICATION_EVENTS.INVITATION_ACCEPTED,
+      new InvitationAcceptedEvent(
+        klass.instructor.userId,
+        joiningUser?.name ?? 'یک کاربر',
+        klass.name,
+        classId,
+      ),
+    );
 
     return { classId, joined: true };
   }

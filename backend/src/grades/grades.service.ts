@@ -1,8 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { GradeType } from '../generated/prisma/enums.js';
 import { CreateGradeDto } from './dto/create-grade.dto.js';
 import { UpdateGradeDto } from './dto/update-grade.dto.js';
+import { NOTIFICATION_EVENTS, GradeCreatedEvent } from '../notifications/events/notification-events.js';
 
 const LETTER_PATTERN = /^[A-DFa-df][+-]?$/;
 
@@ -31,7 +33,10 @@ function assertValueMatchesType(type: GradeType, value: string) {
 
 @Injectable()
 export class GradesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   private async getInstructorId(userId: string): Promise<string> {
     const instructor = await this.prisma.instructor.findUnique({ where: { userId } });
@@ -71,16 +76,17 @@ export class GradesService {
   // ---- Instructor side ----
 
   async create(userId: string, classId: string, dto: CreateGradeDto) {
-    await this.getOwnedClass(userId, classId);
+    const klass = await this.getOwnedClass(userId, classId);
     const enrollment = await this.prisma.enrollment.findUnique({
       where: { classId_studentId: { classId, studentId: dto.studentId } },
+      include: { student: { select: { userId: true } } },
     });
     if (!enrollment || enrollment.status !== 'ACTIVE') {
       throw new BadRequestException('این دانش‌آموز در این کلاس ثبت‌نام نکرده است.');
     }
     assertValueMatchesType(dto.type, dto.value);
 
-    return this.prisma.grade.create({
+    const grade = await this.prisma.grade.create({
       data: {
         classId,
         studentId: dto.studentId,
@@ -90,6 +96,13 @@ export class GradesService {
         note: dto.note,
       },
     });
+
+    this.eventEmitter.emit(
+      NOTIFICATION_EVENTS.GRADE_CREATED,
+      new GradeCreatedEvent(enrollment.student.userId, grade.title, klass.name, classId),
+    );
+
+    return grade;
   }
 
   async update(userId: string, classId: string, gradeId: string, dto: UpdateGradeDto) {

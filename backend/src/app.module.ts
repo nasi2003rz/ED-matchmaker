@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule as CronModule } from '@nestjs/schedule';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -19,12 +21,15 @@ import { MessagingModule } from './messaging/messaging.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { ChildrenModule } from './children/children.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    EventEmitterModule.forRoot(),
+    CronModule.forRoot(),
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -42,6 +47,7 @@ import { ChildrenModule } from './children/children.module.js';
     PaymentsModule,
     DashboardModule,
     ChildrenModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

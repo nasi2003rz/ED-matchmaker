@@ -26,6 +26,7 @@ model User {
   student       Student?
   parent        Parent?
   sentMessages  Message[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -346,6 +347,9 @@ model ClassSession {
   status    SessionStatus  @default(SCHEDULED)
   proposal    SessionProposal?
   attendances Attendance[]
+  // Set once a CLASS_REMINDER notification has gone out for this session,
+  // so the reminder cron (Step 18) never sends the same one twice.
+  reminderSentAt DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -613,12 +617,50 @@ model Payment {
   amount     Int
   dueDate    DateTime?
   paidAmount Int       @default(0)
+  // Set once a PAYMENT_REMINDER notification has gone out for this
+  // invoice's current due date, so the reminder cron (Step 18) doesn't
+  // repeat it every run.
+  reminderSentAt DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
   @@index([classId])
   @@index([studentId])
   @@map("payments")
+}
+
+// CLAUDE.md Section 5.2: "design as a reusable service, not tightly
+// coupled to individual modules." Every producing module (Join,
+// Assignments, Grades, Messaging, Classes, and the reminder cron below)
+// emits a domain event via EventEmitter2 rather than importing
+// NotificationsService directly — NotificationsModule is the only thing
+// that listens and turns events into rows here. In-app only for Phase 1
+// (Section 5.2: "in-app to start").
+enum NotificationType {
+  INVITATION_ACCEPTED
+  NEW_ASSIGNMENT
+  ASSIGNMENT_REVIEWED
+  NEW_GRADE
+  CLASS_REMINDER
+  SCHEDULE_CHANGE
+  NEW_MESSAGE
+  PAYMENT_REMINDER
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([userId, readAt])
+  @@map("notifications")
 }
 
 model RefreshToken {

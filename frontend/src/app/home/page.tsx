@@ -23,6 +23,8 @@ import {
 import { formatDayLabel, formatTime } from "@/lib/calendar-utils";
 import { HOMEWORK_STATUS_LABELS, HOMEWORK_STATUS_VARIANT } from "@/lib/homework-labels";
 import { formatGradeValue } from "@/lib/grades-labels";
+import { fetchUnreadCount } from "@/lib/notifications-api";
+import { Bell } from "lucide-react";
 
 export default function HomePage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
@@ -88,6 +90,8 @@ function StudentHome({ name }: { name: string }) {
   return (
     <div className="mx-auto max-w-md space-y-5 p-6" dir="rtl">
       <h1 className="text-xl font-bold">خوش آمدید، {name}</h1>
+
+      <NotificationsCard />
 
       <div className="space-y-2">
         <p className="text-sm font-medium">جلسه‌ی بعدی</p>
@@ -236,6 +240,8 @@ function ParentHome({ name }: { name: string }) {
     <div className="mx-auto max-w-md space-y-5 p-6" dir="rtl">
       <h1 className="text-xl font-bold">خوش آمدید، {name}</h1>
 
+      <NotificationsCard />
+
       <Link href="/messages">
         <Card className="transition-colors hover:bg-muted/50">
           <CardContent className="flex items-center justify-between py-3 text-sm">
@@ -275,6 +281,33 @@ function ParentHome({ name }: { name: string }) {
         )}
       </div>
     </div>
+  );
+}
+
+function NotificationsCard() {
+  const { getAccessToken } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+    fetchUnreadCount(token)
+      .then(setUnreadCount)
+      .catch(() => {});
+  }, [getAccessToken]);
+
+  return (
+    <Link href="/notifications">
+      <Card className="transition-colors hover:bg-muted/50">
+        <CardContent className="flex items-center justify-between py-3 text-sm">
+          <span className="flex items-center gap-2 font-medium">
+            <Bell className="size-4" />
+            اعلان‌ها
+          </span>
+          {unreadCount > 0 ? <Badge>{unreadCount}</Badge> : <span className="text-muted-foreground">—</span>}
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
