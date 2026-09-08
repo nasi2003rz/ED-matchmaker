@@ -15,6 +15,7 @@ import {
   type ConversationThread,
 } from "@/lib/messaging-api";
 import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function ConversationThreadPage() {
   const { getAccessToken, isLoading: isAuthLoading } = useAuth();
@@ -64,15 +65,18 @@ export default function ConversationThreadPage() {
 
   if (isAuthLoading || thread === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-2rem)] max-w-md flex-col p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto flex h-[calc(100dvh-10.75rem)] max-w-md flex-col lg:h-[calc(100dvh-7.25rem)]">
       <div className="flex items-center justify-between pb-3">
         <h1 className="text-lg font-bold">{thread.otherParty.name}</h1>
         <Button variant="outline" size="sm" onClick={() => router.push("/messages")}>
@@ -127,5 +131,6 @@ export default function ConversationThreadPage() {
         </Button>
       </div>
     </div>
+    </AppShell>
   );
 }

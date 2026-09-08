@@ -51,6 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const accessTokenRef = useRef<string | null>(null);
+  // Refresh tokens rotate on every use, and the backend treats reuse of an
+  // already-rotated one as a compromise signal and revokes *every* session
+  // for the user (see backend/src/auth/auth.service.ts). Two concurrent
+  // `/auth/refresh` calls sharing the same cookie — e.g. React StrictMode's
+  // dev-only double effect invocation — would race: the loser presents a
+  // token the winner already rotated and gets treated as theft, logging the
+  // user out. Caching the in-flight promise so a second call in the same
+  // tick reuses it (never fires a second request) avoids that self-race.
+  const refreshInFlightRef = useRef<Promise<AuthResponse> | null>(null);
 
   const loadMe = useCallback(async (accessToken: string) => {
     const data = await apiFetch<MeResponse>("/users/me", { accessToken });
@@ -58,7 +67,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    apiFetch<AuthResponse>("/auth/refresh", { method: "POST" })
+    if (!refreshInFlightRef.current) {
+      refreshInFlightRef.current = apiFetch<AuthResponse>("/auth/refresh", {
+        method: "POST",
+      }).finally(() => {
+        refreshInFlightRef.current = null;
+      });
+    }
+    refreshInFlightRef.current
       .then(async (data) => {
         accessTokenRef.current = data.accessToken;
         await loadMe(data.accessToken);

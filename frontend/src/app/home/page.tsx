@@ -25,6 +25,7 @@ import { HOMEWORK_STATUS_LABELS, HOMEWORK_STATUS_VARIANT } from "@/lib/homework-
 import { formatGradeValue } from "@/lib/grades-labels";
 import { fetchUnreadCount } from "@/lib/notifications-api";
 import { Bell } from "lucide-react";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function HomePage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
@@ -44,11 +45,13 @@ export default function HomePage() {
 
   if (isAuthLoading || (role !== "STUDENT" && role !== "PARENT")) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
@@ -80,15 +83,18 @@ function StudentHome({ name }: { name: string }) {
 
   if (dashboard === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-24 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-5 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-5">
       <h1 className="text-xl font-bold">خوش آمدید، {name}</h1>
 
       <NotificationsCard />
@@ -205,6 +211,7 @@ function StudentHome({ name }: { name: string }) {
         </Card>
       </Link>
     </div>
+    </AppShell>
   );
 }
 
@@ -229,15 +236,18 @@ function ParentHome({ name }: { name: string }) {
 
   if (dashboard === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-24 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-5 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-5">
       <h1 className="text-xl font-bold">خوش آمدید، {name}</h1>
 
       <NotificationsCard />
@@ -281,6 +291,7 @@ function ParentHome({ name }: { name: string }) {
         )}
       </div>
     </div>
+    </AppShell>
   );
 }
 

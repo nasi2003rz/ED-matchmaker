@@ -36,6 +36,7 @@ import {
   type RosterEntry,
   type RosterStatus,
 } from "@/lib/students-api";
+import { AppShell } from "@/components/layout/app-shell";
 
 function RosterTable({
   entries,
@@ -182,15 +183,18 @@ export default function StudentsPage() {
 
   if (isAuthLoading || active === null) {
     return (
-      <div className="mx-auto max-w-2xl space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-2xl space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">دانش‌آموزان من</h1>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -241,5 +245,6 @@ export default function StudentsPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </AppShell>
   );
 }

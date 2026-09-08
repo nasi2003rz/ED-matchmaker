@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { fetchMyGrades, type MyGradeEntry } from "@/lib/grades-api";
 import { GRADE_TYPE_LABELS, formatGradeValue } from "@/lib/grades-labels";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function GradesPage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
@@ -42,15 +43,18 @@ export default function GradesPage() {
 
   if (isAuthLoading || grades === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-4">
       <h1 className="text-xl font-bold">نمرات</h1>
 
       {grades.length === 0 ? (
@@ -75,5 +79,6 @@ export default function GradesPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

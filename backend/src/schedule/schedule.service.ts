@@ -38,6 +38,48 @@ export class ScheduleService {
     }));
   }
 
+  // Student's own calendar (Step 20 fix): mirrors listForInstructor's
+  // shape (no per-child tagging needed — a student only ever sees their
+  // own sessions) via the student's active enrollments.
+  async listForStudent(userId: string, from: Date, to: Date) {
+    const student = await this.prisma.student.findUnique({ where: { userId } });
+    if (!student) {
+      throw new NotFoundException('پروفایل دانش‌آموز یافت نشد.');
+    }
+    if (to <= from) {
+      throw new BadRequestException('بازه‌ی زمانی نامعتبر است.');
+    }
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { studentId: student.id, status: 'ACTIVE' },
+      select: { classId: true },
+    });
+    if (enrollments.length === 0) return [];
+
+    const sessions = await this.prisma.classSession.findMany({
+      where: {
+        classId: { in: enrollments.map((e) => e.classId) },
+        startsAt: { gte: from, lt: to },
+        status: { not: 'CANCELLED' },
+      },
+      include: { class: { include: { location: true } } },
+      orderBy: { startsAt: 'asc' },
+    });
+
+    return sessions.map((s) => ({
+      id: s.id,
+      startsAt: s.startsAt,
+      endsAt: s.endsAt,
+      status: s.status,
+      class: {
+        id: s.class.id,
+        name: s.class.name,
+        classType: s.class.classType,
+        location: s.class.location ? { city: s.class.location.city } : null,
+      },
+    }));
+  }
+
   // Family calendar (CLAUDE.md Section 5.2, Step 17): every child's
   // sessions in one combined view, each tagged with which child it
   // belongs to — the whole point of a "family" calendar over a per-child

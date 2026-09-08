@@ -32,6 +32,7 @@ import {
   type Announcement,
 } from "@/lib/messaging-api";
 import { fetchRoster, type RosterEntry } from "@/lib/students-api";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function MessagesPage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
@@ -104,10 +105,12 @@ export default function MessagesPage() {
 
   if (isAuthLoading || conversations === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
@@ -117,7 +120,8 @@ export default function MessagesPage() {
       : (instructors ?? []);
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">پیام‌ها</h1>
         <Button size="sm" onClick={() => setShowStart((v) => !v)}>
@@ -202,6 +206,7 @@ export default function MessagesPage() {
         </Tabs>
       )}
     </div>
+    </AppShell>
   );
 }
 

@@ -9,8 +9,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
+import { activeRole } from "@/components/layout/nav-config";
 import { ApiError } from "@/lib/api";
 import { fetchFamilySchedule, type FamilyCalendarSession } from "@/lib/dashboard-api";
+import { fetchMySchedule } from "@/lib/schedule-api";
 import {
   addDays,
   startOfDay,
@@ -23,18 +25,35 @@ import {
   formatTime,
 } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/layout/app-shell";
 
 type ViewMode = "day" | "week" | "month";
 
-// Parent-only family calendar (CLAUDE.md Section 5.2, Step 17) — every
-// child's sessions combined, each tagged with which child it belongs to.
+// A calendar entry is either a parent's family-calendar session (tagged
+// with which child it belongs to) or a student's own session (no tag
+// needed — it's always theirs). CalendarEntry normalizes both shapes so
+// the day/week/month views below don't need to care which role is
+// viewing.
+interface CalendarEntry {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+  student?: { id: string; name: string };
+  class: FamilyCalendarSession["class"];
+}
+
+// Parent sees a combined family calendar (CLAUDE.md Section 5.2, Step
+// 17); student sees their own calendar (Step 20 fix — this page used to
+// 404/be inaccessible for students despite nav-config linking here).
 export default function CalendarPage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
   const router = useRouter();
+  const role = user ? activeRole(user.roles) : null;
 
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()));
-  const [sessions, setSessions] = useState<FamilyCalendarSession[] | null>(null);
+  const [sessions, setSessions] = useState<CalendarEntry[] | null>(null);
 
   const range = useMemo(() => {
     if (viewMode === "day") {
@@ -51,14 +70,19 @@ export default function CalendarPage() {
 
   const load = useCallback(async () => {
     const token = getAccessToken();
-    if (!token) return;
+    if (!token || !role) return;
     try {
-      const data = await fetchFamilySchedule(token, range.from, range.to);
-      setSessions(data);
+      if (role === "PARENT") {
+        const data = await fetchFamilySchedule(token, range.from, range.to);
+        setSessions(data);
+      } else {
+        const data = await fetchMySchedule(token, range.from, range.to);
+        setSessions(data.map((s) => ({ ...s, student: undefined })));
+      }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "خطا در بارگذاری تقویم.");
     }
-  }, [getAccessToken, range]);
+  }, [getAccessToken, role, range]);
 
   useEffect(() => {
     if (isAuthLoading) return;
@@ -66,13 +90,13 @@ export default function CalendarPage() {
       router.replace("/login");
       return;
     }
-    if (!user?.roles.includes("PARENT")) {
+    if (role !== "PARENT" && role !== "STUDENT") {
       router.replace("/");
       return;
     }
     setSessions(null);
     load();
-  }, [isAuthLoading, getAccessToken, user, router, load]);
+  }, [isAuthLoading, getAccessToken, role, router, load]);
 
   function step(direction: 1 | -1) {
     if (viewMode === "day") setAnchor((a) => addDays(a, direction));
@@ -82,16 +106,19 @@ export default function CalendarPage() {
 
   if (isAuthLoading || sessions === null) {
     return (
-      <div className="mx-auto max-w-2xl space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-2xl space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 p-6" dir="rtl">
-      <h1 className="text-xl font-bold">تقویم خانواده</h1>
+    <AppShell>
+    <div className="mx-auto max-w-2xl space-y-4">
+      <h1 className="text-xl font-bold">{role === "PARENT" ? "تقویم خانواده" : "تقویم"}</h1>
 
       <div className="flex items-center justify-between">
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
@@ -116,7 +143,9 @@ export default function CalendarPage() {
 
       {sessions.length === 0 && (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          اگر هنوز فرزندی اضافه نکرده‌اید، از صفحه‌ی «فرزندان» اضافه کنید.
+          {role === "PARENT"
+            ? "اگر هنوز فرزندی اضافه نکرده‌اید، از صفحه‌ی «فرزندان» اضافه کنید."
+            : "جلسه‌ای در این بازه برای شما ثبت نشده است."}
         </p>
       )}
 
@@ -133,10 +162,11 @@ export default function CalendarPage() {
         />
       )}
     </div>
+    </AppShell>
   );
 }
 
-function SessionRow({ session }: { session: FamilyCalendarSession }) {
+function SessionRow({ session }: { session: CalendarEntry }) {
   return (
     <Card>
       <CardContent className="flex items-center justify-between py-2.5 text-sm">
@@ -146,13 +176,13 @@ function SessionRow({ session }: { session: FamilyCalendarSession }) {
             {formatTime(session.startsAt)} تا {formatTime(session.endsAt)}
           </div>
         </div>
-        <Badge variant="secondary">{session.student.name}</Badge>
+        {session.student && <Badge variant="secondary">{session.student.name}</Badge>}
       </CardContent>
     </Card>
   );
 }
 
-function DayView({ date, sessions }: { date: Date; sessions: FamilyCalendarSession[] }) {
+function DayView({ date, sessions }: { date: Date; sessions: CalendarEntry[] }) {
   const daySessions = sessions
     .filter((s) => isSameDay(new Date(s.startsAt), date))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
@@ -163,7 +193,9 @@ function DayView({ date, sessions }: { date: Date; sessions: FamilyCalendarSessi
       {daySessions.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">جلسه‌ای در این روز نیست.</p>
       ) : (
-        daySessions.map((s) => <SessionRow key={`${s.id}-${s.student.id}`} session={s} />)
+        daySessions.map((s) => (
+          <SessionRow key={`${s.id}-${s.student?.id ?? "self"}`} session={s} />
+        ))
       )}
     </div>
   );
@@ -174,7 +206,7 @@ function WeekView({
   sessions,
 }: {
   weekStart: Date;
-  sessions: FamilyCalendarSession[];
+  sessions: CalendarEntry[];
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -194,7 +226,7 @@ function WeekView({
             ) : (
               <div className="space-y-1.5">
                 {daySessions.map((s) => (
-                  <SessionRow key={`${s.id}-${s.student.id}`} session={s} />
+                  <SessionRow key={`${s.id}-${s.student?.id ?? "self"}`} session={s} />
                 ))}
               </div>
             )}
@@ -211,7 +243,7 @@ function MonthView({
   onSelectDay,
 }: {
   anchor: Date;
-  sessions: FamilyCalendarSession[];
+  sessions: CalendarEntry[];
   onSelectDay: (date: Date) => void;
 }) {
   const grid = getMonthGrid(anchor);

@@ -11,6 +11,7 @@ import { activeRole } from "@/components/layout/nav-config";
 import { ApiError } from "@/lib/api";
 import { fetchMyPayments, type MyPaymentEntry } from "@/lib/payments-api";
 import { PAYMENT_STATUS_LABELS, PAYMENT_STATUS_VARIANT, formatToman } from "@/lib/payments-labels";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function PaymentsPage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
@@ -41,15 +42,18 @@ export default function PaymentsPage() {
 
   if (isAuthLoading || payments === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-4">
       <h1 className="text-xl font-bold">پرداخت‌ها</h1>
 
       {payments.length === 0 ? (
@@ -86,5 +90,6 @@ export default function PaymentsPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

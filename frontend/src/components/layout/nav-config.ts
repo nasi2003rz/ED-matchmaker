@@ -20,16 +20,13 @@ export interface NavItem {
 /**
  * Per-role primary navigation (CLAUDE.md §7). The shell renders the set for
  * the user's active role — tabs are never merged across roles.
- *
- * Wave 0 wires the INSTRUCTOR routes end-to-end; STUDENT/PARENT routes are
- * declared here but their pages arrive in Wave 4.
  */
 export const NAV_BY_ROLE: Record<RoleName, NavItem[]> = {
   INSTRUCTOR: [
     { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
     { href: "/classes", label: "کلاس‌ها", icon: GraduationCap },
     { href: "/students", label: "دانش‌آموزان", icon: Users },
-    { href: "/calendar", label: "تقویم", icon: CalendarDays },
+    { href: "/schedule", label: "تقویم", icon: CalendarDays },
     { href: "/messages", label: "پیام‌ها", icon: MessageCircle },
     { href: "/more", label: "بیشتر", icon: MoreHorizontal },
   ],

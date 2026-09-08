@@ -39,6 +39,13 @@ export function fetchSchedule(accessToken: string, from: Date, to: Date) {
   return apiFetch<ScheduleSession[]>(`/schedule?${params}`, { accessToken });
 }
 
+// Student's own calendar (Step 20 fix) — same shape as the instructor's
+// `/schedule`, scoped server-side to the student's active enrollments.
+export function fetchMySchedule(accessToken: string, from: Date, to: Date) {
+  const params = new URLSearchParams({ from: from.toISOString(), to: to.toISOString() });
+  return apiFetch<ScheduleSession[]>(`/schedule/mine?${params}`, { accessToken });
+}
+
 export function fetchClassSessions(accessToken: string, classId: string) {
   return apiFetch<ClassSessionItem[]>(`/classes/${classId}/sessions`, { accessToken });
 }

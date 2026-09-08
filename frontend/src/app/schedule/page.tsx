@@ -23,6 +23,7 @@ import {
   formatTime,
 } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/layout/app-shell";
 
 type ViewMode = "day" | "week" | "month";
 
@@ -80,15 +81,18 @@ export default function SchedulePage() {
 
   if (isAuthLoading || sessions === null) {
     return (
-      <div className="mx-auto max-w-2xl space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-2xl space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-2xl space-y-4">
       <h1 className="text-xl font-bold">برنامه‌ی هفتگی</h1>
 
       <div className="flex items-center justify-between">
@@ -129,6 +133,7 @@ export default function SchedulePage() {
         />
       )}
     </div>
+    </AppShell>
   );
 }
 

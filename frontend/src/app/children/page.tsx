@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { fetchChildren, linkChild, unlinkChild, type ChildEntry } from "@/lib/children-api";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function ChildrenPage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
@@ -74,15 +75,18 @@ export default function ChildrenPage() {
 
   if (isAuthLoading || children === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-24 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-4">
       <h1 className="text-xl font-bold">فرزندان</h1>
 
       <Card>
@@ -138,5 +142,6 @@ export default function ChildrenPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

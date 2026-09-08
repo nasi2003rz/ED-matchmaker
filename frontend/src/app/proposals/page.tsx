@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { fetchMyProposals, respondToProposal, type Proposal } from "@/lib/schedule-api";
 import { formatDayLabel, formatTime } from "@/lib/calendar-utils";
+import { AppShell } from "@/components/layout/app-shell";
 
 const STATUS_LABELS: Record<Proposal["status"], string> = {
   PENDING: "در انتظار پاسخ",
@@ -66,10 +67,12 @@ export default function ProposalsPage() {
 
   if (isAuthLoading || proposals === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-32 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
@@ -77,7 +80,8 @@ export default function ProposalsPage() {
   const others = proposals.filter((p) => p.status !== "PENDING");
 
   return (
-    <div className="mx-auto max-w-md space-y-6 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-6">
       <h1 className="text-xl font-bold">پیشنهادهای جلسه</h1>
 
       {proposals.length === 0 ? (
@@ -146,5 +150,6 @@ export default function ProposalsPage() {
         </>
       )}
     </div>
+    </AppShell>
   );
 }

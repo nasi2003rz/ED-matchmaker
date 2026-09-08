@@ -47,6 +47,44 @@ export class ClassesService {
     return classes.map((c) => this.toDto(c));
   }
 
+  // Student-side "my classes" list (Step 20 fix — nav-config already
+  // linked here but no page/endpoint existed). Scoped server-side to the
+  // student's own active enrollments only (CLAUDE.md Section 9).
+  async listForStudent(userId: string) {
+    const student = await this.prisma.student.findUnique({ where: { userId } });
+    if (!student) {
+      throw new NotFoundException('پروفایل دانش‌آموز یافت نشد.');
+    }
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { studentId: student.id, status: 'ACTIVE' },
+      include: {
+        class: {
+          include: {
+            category: true,
+            location: true,
+            instructor: { include: { user: true } },
+          },
+        },
+      },
+      orderBy: { enrolledAt: 'desc' },
+    });
+
+    return enrollments.map((e) => ({
+      id: e.class.id,
+      name: e.class.name,
+      status: e.class.status,
+      classType: e.class.classType,
+      deliveryMode: e.class.deliveryMode,
+      days: e.class.days,
+      startTime: e.class.startTime,
+      endTime: e.class.endTime,
+      category: e.class.category ? { id: e.class.category.id, name: e.class.category.name } : null,
+      location: e.class.location ? { city: e.class.location.city } : null,
+      instructorName: e.class.instructor.user.name,
+    }));
+  }
+
   async getOne(userId: string, classId: string) {
     const instructorId = await this.getInstructorId(userId);
     const found = await this.prisma.class.findUnique({

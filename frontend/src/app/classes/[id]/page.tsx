@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -436,15 +437,18 @@ export default function ClassDetailPage() {
 
   if (isAuthLoading || klass === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">{klass.name}</h1>
         <Badge variant="secondary">{STATUS_LABELS[klass.status]}</Badge>
@@ -1169,5 +1173,6 @@ export default function ClassDetailPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </AppShell>
   );
 }

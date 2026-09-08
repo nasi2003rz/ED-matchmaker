@@ -7,6 +7,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { ClassForm } from "@/components/class-form";
 import { useAuth } from "@/lib/auth-context";
 import { createClass, type ClassInput } from "@/lib/classes-api";
+import { AppShell } from "@/components/layout/app-shell";
+import { ListSkeleton } from "@/components/common/list-skeleton";
 
 export default function NewClassPage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
@@ -31,19 +33,27 @@ export default function NewClassPage() {
     router.push(`/classes/${created.id}`);
   }
 
-  if (isAuthLoading) return null;
+  if (isAuthLoading) {
+    return (
+      <AppShell>
+        <ListSkeleton rows={1} />
+      </AppShell>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-md p-6" dir="rtl">
-      <Card>
-        <CardHeader>
-          <CardTitle>ساخت کلاس جدید</CardTitle>
-          <CardDescription>اطلاعات کلاس را وارد کنید.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ClassForm onSubmit={handleSubmit} submitLabel="ساخت کلاس" />
-        </CardContent>
-      </Card>
-    </div>
+    <AppShell>
+      <div className="mx-auto max-w-md">
+        <Card>
+          <CardHeader>
+            <CardTitle>ساخت کلاس جدید</CardTitle>
+            <CardDescription>اطلاعات کلاس را وارد کنید.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ClassForm onSubmit={handleSubmit} submitLabel="ساخت کلاس" />
+          </CardContent>
+        </Card>
+      </div>
+    </AppShell>
   );
 }

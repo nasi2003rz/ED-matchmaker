@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
 import { fetchMyHomework, submitHomework, type HomeworkItem } from "@/lib/assignments-api";
 import { HOMEWORK_STATUS_LABELS, HOMEWORK_STATUS_VARIANT } from "@/lib/homework-labels";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function HomeworkPage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
@@ -69,15 +70,18 @@ export default function HomeworkPage() {
 
   if (isAuthLoading || items === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-4">
       <h1 className="text-xl font-bold">تکالیف</h1>
 
       {items.length === 0 ? (
@@ -138,5 +142,6 @@ export default function HomeworkPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

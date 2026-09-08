@@ -85,6 +85,25 @@ export function fetchClasses(accessToken: string) {
   return apiFetch<ClassItem[]>("/classes", { accessToken });
 }
 
+export interface MyClassEntry {
+  id: string;
+  name: string;
+  status: ClassStatus;
+  classType: ClassType;
+  deliveryMode: DeliveryMode | null;
+  days: Weekday[];
+  startTime: string | null;
+  endTime: string | null;
+  category: { id: string; name: string } | null;
+  location: { city: string } | null;
+  instructorName: string;
+}
+
+// Student's own enrolled classes (Step 20 fix).
+export function fetchMyClasses(accessToken: string) {
+  return apiFetch<MyClassEntry[]>("/enrollments/mine", { accessToken });
+}
+
 export function fetchClass(accessToken: string, id: string) {
   return apiFetch<ClassItem>(`/classes/${id}`, { accessToken });
 }

@@ -38,6 +38,7 @@ import {
   type InstructorProfile,
   type DeliveryMode,
 } from "@/lib/instructor-api";
+import { AppShell } from "@/components/layout/app-shell";
 
 const DELIVERY_LABELS: Record<DeliveryMode, string> = {
   ONLINE: "آنلاین",
@@ -158,15 +159,18 @@ export default function InstructorOnboardingPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-3 p-6">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-40 w-full max-w-md" />
-      </div>
+      <AppShell>
+        <div className="flex flex-1 flex-col items-center justify-center gap-3">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-40 w-full max-w-md" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="flex min-h-full flex-1 items-center justify-center p-6">
+    <AppShell>
+    <div className="flex flex-1 items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>تکمیل پروفایل مربی‌گری</CardTitle>
@@ -308,5 +312,6 @@ export default function InstructorOnboardingPage() {
         </CardFooter>
       </Card>
     </div>
+    </AppShell>
   );
 }

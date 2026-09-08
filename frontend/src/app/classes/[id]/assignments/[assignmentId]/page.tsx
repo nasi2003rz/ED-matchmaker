@@ -18,6 +18,7 @@ import {
   type AssignmentDetail,
 } from "@/lib/assignments-api";
 import { HOMEWORK_STATUS_LABELS, HOMEWORK_STATUS_VARIANT } from "@/lib/homework-labels";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function AssignmentDetailPage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
@@ -91,15 +92,18 @@ export default function AssignmentDetailPage() {
 
   if (isAuthLoading || assignment === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">{assignment.title}</h1>
         <Button variant="outline" size="sm" onClick={() => router.push(`/classes/${classId}`)}>
@@ -188,5 +192,6 @@ export default function AssignmentDetailPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

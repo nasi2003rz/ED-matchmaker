@@ -16,6 +16,7 @@ import {
 } from "@/lib/notifications-api";
 import { NOTIFICATION_ICON } from "@/lib/notifications-labels";
 import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function NotificationsPage() {
   const { getAccessToken, isLoading: isAuthLoading } = useAuth();
@@ -73,17 +74,20 @@ export default function NotificationsPage() {
 
   if (isAuthLoading || notifications === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-24 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   const hasUnread = notifications.some((n) => !n.readAt);
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">اعلان‌ها</h1>
         {hasUnread && (
@@ -126,5 +130,6 @@ export default function NotificationsPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

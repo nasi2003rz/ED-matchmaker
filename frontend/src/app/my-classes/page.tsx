@@ -1,21 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
-import { cn } from "@/lib/utils";
-import { fetchClasses, type ClassItem } from "@/lib/classes-api";
+import { fetchMyClasses, type MyClassEntry } from "@/lib/classes-api";
 import { STATUS_LABELS, WEEKDAY_LABELS, WEEKDAY_ORDER } from "@/lib/classes-labels";
 import { AppShell } from "@/components/layout/app-shell";
 
-function formatSchedule(klass: ClassItem): string {
+function formatSchedule(klass: MyClassEntry): string {
   if (klass.days.length === 0) return "—";
   const days = WEEKDAY_ORDER.filter((d) => klass.days.includes(d))
     .map((d) => WEEKDAY_LABELS[d])
@@ -24,16 +21,16 @@ function formatSchedule(klass: ClassItem): string {
   return `${days}${time}`;
 }
 
-export default function ClassesPage() {
+export default function MyClassesPage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
   const router = useRouter();
-  const [classes, setClasses] = useState<ClassItem[] | null>(null);
+  const [classes, setClasses] = useState<MyClassEntry[] | null>(null);
 
   const load = useCallback(async () => {
     const token = getAccessToken();
     if (!token) return;
     try {
-      const data = await fetchClasses(token);
+      const data = await fetchMyClasses(token);
       setClasses(data);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "خطا در بارگذاری کلاس‌ها.");
@@ -46,7 +43,7 @@ export default function ClassesPage() {
       router.replace("/login");
       return;
     }
-    if (!user?.roles.includes("INSTRUCTOR")) {
+    if (!user?.roles.includes("STUDENT")) {
       router.replace("/");
       return;
     }
@@ -67,38 +64,28 @@ export default function ClassesPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-2xl space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">کلاس‌های من</h1>
-          <Link href="/classes/new" className={cn(buttonVariants())}>
-            کلاس جدید
-          </Link>
-        </div>
+        <h1 className="text-xl font-bold">کلاس‌های من</h1>
 
         {classes.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            هنوز کلاسی نساخته‌اید.
+            هنوز در کلاسی ثبت‌نام نشده‌اید.
           </p>
         ) : (
           <div className="space-y-3">
             {classes.map((klass) => (
-              <Link key={klass.id} href={`/classes/${klass.id}`}>
-                <Card className="transition-colors hover:border-primary">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">{klass.name}</CardTitle>
-                      <Badge variant="secondary">{STATUS_LABELS[klass.status]}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-1 text-sm text-muted-foreground">
-                    <div>{formatSchedule(klass)}</div>
-                    <div>
-                      {klass.capacity !== null
-                        ? `${klass.enrolledCount} از ${klass.capacity} نفر ثبت‌نام شده — ${klass.seatsLeft} صندلی خالی`
-                        : `${klass.enrolledCount} نفر ثبت‌نام شده`}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+              <Card key={klass.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">{klass.name}</CardTitle>
+                    <Badge variant="secondary">{STATUS_LABELS[klass.status]}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-1 text-sm text-muted-foreground">
+                  <div>مربی: {klass.instructorName}</div>
+                  <div>{formatSchedule(klass)}</div>
+                  {klass.location && <div>{klass.location.city}</div>}
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}

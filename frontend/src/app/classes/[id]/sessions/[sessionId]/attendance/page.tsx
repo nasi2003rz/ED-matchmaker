@@ -17,6 +17,7 @@ import {
 } from "@/lib/attendance-api";
 import { ATTENDANCE_LABELS, ATTENDANCE_ORDER } from "@/lib/attendance-labels";
 import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function SessionAttendancePage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
@@ -67,15 +68,18 @@ export default function SessionAttendancePage() {
 
   if (isAuthLoading || entries === null) {
     return (
-      <div className="mx-auto max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-48 w-full" />
-      </div>
+      <AppShell>
+        <div className="mx-auto max-w-md space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-6" dir="rtl">
+    <AppShell>
+    <div className="mx-auto max-w-md space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">ثبت حضور و غیاب</h1>
         <Button variant="outline" size="sm" onClick={() => router.push(`/classes/${classId}`)}>
@@ -129,5 +133,6 @@ export default function SessionAttendancePage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

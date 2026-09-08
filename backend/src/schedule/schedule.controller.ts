@@ -27,4 +27,10 @@ export class ScheduleController {
   listFamily(@CurrentUser() user: CurrentUserPayload, @Query() query: ScheduleQueryDto) {
     return this.scheduleService.listForParent(user.id, new Date(query.from), new Date(query.to));
   }
+
+  @Get('mine')
+  @Roles(RoleName.STUDENT)
+  listMine(@CurrentUser() user: CurrentUserPayload, @Query() query: ScheduleQueryDto) {
+    return this.scheduleService.listForStudent(user.id, new Date(query.from), new Date(query.to));
+  }
 }
