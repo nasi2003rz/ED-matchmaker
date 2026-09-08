@@ -164,6 +164,13 @@ export class AssignmentsService {
 
   async listMine(userId: string) {
     const studentId = await this.getStudentId(userId);
+    return this.listForStudent(studentId);
+  }
+
+  // Reusable by a parent's per-child dashboard view (Step 17) — same query,
+  // keyed directly off a known studentId instead of resolving it from the
+  // caller's own userId.
+  async listForStudent(studentId: string) {
     const enrollments = await this.prisma.enrollment.findMany({
       where: { studentId, status: 'ACTIVE' },
       select: { classId: true },

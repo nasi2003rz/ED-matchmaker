@@ -16,4 +16,10 @@ export class DashboardController {
   getStudentDashboard(@CurrentUser() user: CurrentUserPayload) {
     return this.dashboardService.getStudentDashboard(user.id);
   }
+
+  @Get('parent')
+  @Roles(RoleName.PARENT)
+  getParentDashboard(@CurrentUser() user: CurrentUserPayload) {
+    return this.dashboardService.getParentDashboard(user.id);
+  }
 }

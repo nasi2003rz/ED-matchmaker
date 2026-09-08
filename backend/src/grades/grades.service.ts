@@ -145,6 +145,11 @@ export class GradesService {
 
   async listMine(userId: string) {
     const studentId = await this.getStudentId(userId);
+    return this.listForStudent(studentId);
+  }
+
+  // Reusable by a parent's per-child dashboard view (Step 17).
+  async listForStudent(studentId: string) {
     const grades = await this.prisma.grade.findMany({
       where: { studentId },
       include: { class: { select: { id: true, name: true } } },

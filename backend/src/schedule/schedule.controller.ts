@@ -9,16 +9,22 @@ import { ScheduleQueryDto } from './dto/schedule-query.dto.js';
 
 @Controller('schedule')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(RoleName.INSTRUCTOR)
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
   @Get()
+  @Roles(RoleName.INSTRUCTOR)
   list(@CurrentUser() user: CurrentUserPayload, @Query() query: ScheduleQueryDto) {
     return this.scheduleService.listForInstructor(
       user.id,
       new Date(query.from),
       new Date(query.to),
     );
+  }
+
+  @Get('family')
+  @Roles(RoleName.PARENT)
+  listFamily(@CurrentUser() user: CurrentUserPayload, @Query() query: ScheduleQueryDto) {
+    return this.scheduleService.listForParent(user.id, new Date(query.from), new Date(query.to));
   }
 }

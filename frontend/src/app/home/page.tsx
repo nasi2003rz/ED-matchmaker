@@ -5,11 +5,21 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
+import { activeRole } from "@/components/layout/nav-config";
 import { ApiError } from "@/lib/api";
-import { fetchStudentDashboard, type StudentDashboard } from "@/lib/dashboard-api";
+import {
+  fetchStudentDashboard,
+  fetchParentDashboard,
+  type StudentDashboard,
+  type ParentDashboard,
+  type ChildSummary,
+} from "@/lib/dashboard-api";
 import { formatDayLabel, formatTime } from "@/lib/calendar-utils";
 import { HOMEWORK_STATUS_LABELS, HOMEWORK_STATUS_VARIANT } from "@/lib/homework-labels";
 import { formatGradeValue } from "@/lib/grades-labels";
@@ -17,6 +27,38 @@ import { formatGradeValue } from "@/lib/grades-labels";
 export default function HomePage() {
   const { getAccessToken, isLoading: isAuthLoading, user } = useAuth();
   const router = useRouter();
+  const role = user ? activeRole(user.roles) : null;
+
+  useEffect(() => {
+    if (isAuthLoading) return;
+    if (!getAccessToken()) {
+      router.replace("/login");
+      return;
+    }
+    if (role !== "STUDENT" && role !== "PARENT") {
+      router.replace("/");
+    }
+  }, [isAuthLoading, getAccessToken, role, router]);
+
+  if (isAuthLoading || (role !== "STUDENT" && role !== "PARENT")) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 p-6">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
+
+  return role === "STUDENT" ? (
+    <StudentHome name={user?.name ?? ""} />
+  ) : (
+    <ParentHome name={user?.name ?? ""} />
+  );
+}
+
+function StudentHome({ name }: { name: string }) {
+  const { getAccessToken } = useAuth();
   const [dashboard, setDashboard] = useState<StudentDashboard | null>(null);
 
   const load = useCallback(async () => {
@@ -31,23 +73,13 @@ export default function HomePage() {
   }, [getAccessToken]);
 
   useEffect(() => {
-    if (isAuthLoading) return;
-    if (!getAccessToken()) {
-      router.replace("/login");
-      return;
-    }
-    if (!user?.roles.includes("STUDENT")) {
-      router.replace("/");
-      return;
-    }
     load();
-  }, [isAuthLoading, getAccessToken, user, router, load]);
+  }, [load]);
 
-  if (isAuthLoading || dashboard === null) {
+  if (dashboard === null) {
     return (
       <div className="mx-auto max-w-md space-y-4 p-6">
         <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />
       </div>
     );
@@ -55,7 +87,7 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-md space-y-5 p-6" dir="rtl">
-      <h1 className="text-xl font-bold">خوش آمدید، {user?.name}</h1>
+      <h1 className="text-xl font-bold">خوش آمدید، {name}</h1>
 
       <div className="space-y-2">
         <p className="text-sm font-medium">جلسه‌ی بعدی</p>
@@ -169,5 +201,120 @@ export default function HomePage() {
         </Card>
       </Link>
     </div>
+  );
+}
+
+function ParentHome({ name }: { name: string }) {
+  const { getAccessToken } = useAuth();
+  const [dashboard, setDashboard] = useState<ParentDashboard | null>(null);
+
+  const load = useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) return;
+    try {
+      const data = await fetchParentDashboard(token);
+      setDashboard(data);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "خطا در بارگذاری داشبورد.");
+    }
+  }, [getAccessToken]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (dashboard === null) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 p-6">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-md space-y-5 p-6" dir="rtl">
+      <h1 className="text-xl font-bold">خوش آمدید، {name}</h1>
+
+      <Link href="/messages">
+        <Card className="transition-colors hover:bg-muted/50">
+          <CardContent className="flex items-center justify-between py-3 text-sm">
+            <span className="font-medium">پیام‌های خوانده‌نشده</span>
+            {dashboard.unreadMessagesCount > 0 ? (
+              <Badge>{dashboard.unreadMessagesCount}</Badge>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )}
+          </CardContent>
+        </Card>
+      </Link>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">فرزندان</p>
+          <Link href="/children" className="text-xs text-primary underline underline-offset-4">
+            مدیریت فرزندان
+          </Link>
+        </div>
+
+        {dashboard.children.length === 0 ? (
+          <div className="space-y-3 py-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              هنوز فرزندی به حساب شما متصل نشده است.
+            </p>
+            <Link href="/children" className={cn(buttonVariants({ size: "sm" }))}>
+              افزودن فرزند
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {dashboard.children.map((child) => (
+              <ChildCard key={child.id} child={child} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ChildCard({ child }: { child: ChildSummary }) {
+  return (
+    <Card>
+      <CardContent className="space-y-2 py-3">
+        <div className="flex items-center gap-2">
+          <Avatar className="size-8">
+            <AvatarFallback>{child.name.slice(0, 1)}</AvatarFallback>
+          </Avatar>
+          <span className="text-sm font-medium">{child.name}</span>
+        </div>
+
+        <div className="rounded-md bg-muted p-2 text-xs">
+          {child.nextSession ? (
+            <span>
+              جلسه‌ی بعدی: {child.nextSession.class.name} —{" "}
+              {formatDayLabel(new Date(child.nextSession.startsAt))}{" "}
+              {formatTime(child.nextSession.startsAt)}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">جلسه‌ی آینده‌ای برنامه‌ریزی نشده است.</span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            {child.pendingHomeworkCount > 0
+              ? `${child.pendingHomeworkCount} تکلیف در انتظار`
+              : "بدون تکلیف در انتظار"}
+          </span>
+          {child.recentGrades[0] && (
+            <span>
+              آخرین نمره: {child.recentGrades[0].title} —{" "}
+              {formatGradeValue(child.recentGrades[0].type, child.recentGrades[0].value)}
+            </span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

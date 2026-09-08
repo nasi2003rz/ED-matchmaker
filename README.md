@@ -124,6 +124,13 @@ frontend/   Next.js (App Router) + TypeScript + Tailwind, PWA (Serwist)
 - Frontend lives at `/home`, matching the pre-wired `STUDENT` nav entry (`components/layout/nav-config.ts`).
 - **Known inconsistency, left for Step 20 (UX polish) rather than fixed here:** an `AppShell`/`PageHeader`/`Section`/`StatCard` component set exists (used only by the Instructor's `/dashboard`) but every other page built since — including this one — uses a simpler standalone `max-w-md` layout instead. Retrofitting the shell everywhere is a cross-cutting change out of scope for a single step; `docs/ui-ux-plan.md` should be revisited then.
 
+## Parent dashboard (CLAUDE.md Section 5.2)
+
+- **Parent–child linking** (a real prerequisite CLAUDE.md never specifies a mechanism for): a parent links an *existing* Student account by email — `POST /api/children { email }` sets `Student.parentId`, mirroring the Instructor roster's "add by email" from Step 7 (same Phase 1 simplification: no child-side confirmation). Rejects linking a student already claimed by a different parent (`409`) or one that isn't a student account at all (`400`). `GET/DELETE /api/children` round it out.
+- `GET /api/dashboard/parent` returns **multiple children, switchable** (CLAUDE.md's exact phrase) as an array — one summary per child (next session, today's sessions, pending homework count, recent grades) — plus one parent-level `unreadMessagesCount` (Conversations are per-relationship, not per-child — Step 14, so this isn't split by child). Per-child homework/grades reuse `AssignmentsService`/`GradesService` via new `listForStudent(studentId)` methods (split out of each service's existing `listMine(userId)`, itself now just a thin resolve-then-delegate wrapper) — Section 12: reuse, don't duplicate.
+- **Family calendar**: `GET /api/schedule/family` (new method on the existing `ScheduleService`, alongside the instructor's `listForInstructor`) fans every child's sessions into one combined, chronologically merged list, each entry tagged `student: {id, name}` — the entire point of a *family* calendar over a per-child one. Frontend at `/calendar` reuses the same day/week/month view components as the Instructor's `/schedule` page, with a name badge per session instead of a class-type badge.
+- Frontend: `/home` now branches by role (`STUDENT` → Step 16's dashboard, `PARENT` → the child-switcher view above); `/children` manages the roster; `/calendar` is parent-only for now — a plain personal calendar for students isn't named in either Step 16 or 17's brief, so it's left unbuilt rather than added speculatively.
+
 ## Notes
 
 - Frontend dev/build use `--webpack` because Serwist (PWA/service-worker generation) does not yet support Turbopack.
