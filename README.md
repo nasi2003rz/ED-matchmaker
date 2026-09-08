@@ -43,7 +43,7 @@ frontend/   Next.js (App Router) + TypeScript + Tailwind, PWA (Serwist)
 - Passwords hashed with Argon2id.
 - Endpoints: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`.
 - A `User` can hold multiple roles at once (`UserRole`), each backed by a minimal 1:1 profile table (`Instructor`/`Student`/`Parent`). Cross-role fields (avatar, phone, bio) live on `Profile`.
-- Role-gated routes use `JwtAuthGuard` + `RolesGuard` (`@Roles(RoleName.INSTRUCTOR)`), checked server-side from roles embedded in the JWT payload.
+- Role-gated routes use `JwtAuthGuard` + `RolesGuard` (`@Roles(RoleName.INSTRUCTOR)`). The JWT payload itself carries only `{ sub: userId }` — `JwtStrategy.validate()` re-resolves the user's current roles from the database on every request, so a role change or revocation takes effect on the very next request rather than lingering until a stale access token expires (corrected here during the Step 19 audit — this line previously and inaccurately said roles were "embedded in the JWT payload").
 
 ## Instructor onboarding
 
@@ -138,6 +138,29 @@ frontend/   Next.js (App Router) + TypeScript + Tailwind, PWA (Serwist)
 - In-app only for Phase 1 (Section 5.2: "in-app to start") — `Notification.link` is an in-app path a click routes to, nothing external.
 - `GET /api/notifications`, `GET /api/notifications/unread-count`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all` — available to any authenticated role (a notification belongs to a `User`, not a role's feature set). Frontend at `/notifications`, with an unread-badge entry point added to the Instructor's `/dashboard` and the Student/Parent `/home`.
 - **Bug found and fixed during testing:** `unread-count` originally returned a bare `Promise<number>`; NestJS serves a bare primitive as `text/html`, not `application/json`, which the frontend's JSON-only fetch wrapper silently treated as no body — the badge always showed empty even with real unread notifications. Fixed by wrapping the response as `{ count }`, consistent with every other endpoint in this codebase that already avoids returning bare primitives.
+
+## Security audit (CLAUDE.md Section 12, Step 19)
+
+A systematic review of everything built in Steps 1–18, not a new feature — every controller/service was re-read against CLAUDE.md Section 9 ("every multi-tenant resource must be authorization-checked server-side") and standard web-app risk categories.
+
+**Two real issues found and fixed:**
+
+1. **Stored-XSS-capable avatar upload.** `POST /api/instructors/me/avatar` validated the declared `file.mimetype` against an allowlist (jpg/png/webp) but then named the *saved* file using the extension from the client-supplied `file.originalname` — e.g. a request declaring `Content-Type: image/png` while naming the file `evil.svg` passed the filter, and the server saved it as `…-<timestamp>.svg`, served statically with `Content-Type: image/svg+xml` (SVG can carry an embedded `<script>`/`onload`, executed if a browser is pointed straight at that URL — a well-known real-world vulnerability class). **Fixed** by deriving the saved extension from a server-side map keyed on the *validated* mimetype (`image/png` → `.png`, etc.), never from `originalname` — confirmed by actually uploading an SVG-with-`<script>` payload declared as `image/png`: it's saved as `.png` and served back with `Content-Type: image/png` (+ the pre-existing `X-Content-Type-Options: nosniff`), so a browser never attempts to render it as anything but a (broken) image.
+2. **No rate limiting on `/api/auth/login` or `/api/auth/register`.** `@nestjs/throttler` still has no release supporting `@nestjs/common@^12` (rechecked during this audit — same gap noted in the README since Step 4). Added a minimal in-memory sliding-window `AuthThrottleGuard` (10 requests / 15 min, keyed by IP + path) on both endpoints instead of leaving the gap undocumented-and-unmitigated. Known Phase-1 limitation, consistent with other single-instance simplifications already accepted (e.g. local-disk avatar storage): resets on process restart, doesn't share state across multiple instances — a real distributed limiter is a `@nestjs/throttler`-or-equivalent upgrade once it supports Nest 12. Verified live: 10 requests succeed, the 11th returns `429`, and the limit is scoped per-endpoint (hitting it on `/auth/login` doesn't affect `/auth/register` or any authenticated route).
+
+**Reviewed and confirmed already sound (no change needed):**
+- **Authorization:** every controller re-checked for `@UseGuards`/`@Roles`; every service method that takes a resource ID re-checked for an explicit ownership comparison (`ForbiddenException` on mismatch) rather than trusting the caller's claimed identity — no gaps found across Classes, Attendance, Assignments, Grades, Payments, Messaging, Children, or Proposals.
+- **Password hashing:** `argon2.hash()` defaults to Argon2id in the installed `argon2` version (verified from the package source, not assumed) — matches the README's existing claim.
+- **Refresh tokens:** stored only as a SHA-256 hash (never plaintext), `httpOnly` + `sameSite: lax` + path-scoped cookie, rotated every use, and reuse of an already-rotated token revokes every session for that user (compromise response, not just single-token invalidation).
+- **Access tokens:** kept only in a React ref (never `localStorage`/`sessionStorage` — confirmed no such call exists anywhere in the frontend), so they don't persist across reloads or become readable via unrelated storage-inspection vectors.
+- **Input validation:** the global `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })` plus a typed DTO on every single `@Body()` (no untyped/`any` bodies anywhere) rejects unexpected fields — mitigates mass-assignment.
+- **SQL injection:** no `$queryRaw`/`$executeRaw` anywhere in application code — every query goes through Prisma's parameterized query builder.
+- **XSS:** no `dangerouslySetInnerHTML`, `innerHTML`, `eval`, or `new Function` anywhere in the frontend.
+- **Secrets:** `.env` correctly gitignored (Step 15's git setup), `.env.example` holds only placeholders, the real local `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` are 96-character random values, not defaults.
+- **CORS:** locked to a single configured origin with credentials, not a wildcard.
+- **Error responses:** Nest's default exception filter never includes stack traces in the HTTP response (dev or prod) — only server-side console logs do.
+
+**Documented gaps, deliberately not built now (out of a security *audit's* scope — these are missing features, not vulnerabilities in existing code):** no forgot-password/reset flow (not in Section 5.1's Phase 1 workflow); `JWT_REFRESH_SECRET` is defined in `.env.example` but unused by any code (refresh tokens are opaque random strings, not JWTs) — harmless dead config, left as-is rather than churned.
 
 ## Notes
 

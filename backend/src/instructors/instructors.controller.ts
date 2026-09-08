@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'node:path';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -20,7 +19,20 @@ import { RoleName } from '../generated/prisma/enums.js';
 import { InstructorsService } from './instructors.service.js';
 import { UpdateInstructorProfileDto } from './dto/update-instructor-profile.dto.js';
 
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+// Server-controlled extension per accepted mimetype — the saved file's
+// extension must never come from the client-supplied original filename.
+// `file.mimetype` is a declared, client-controlled header value too, but at
+// least it's checked against this same allowlist before a branch is picked;
+// what it can never do is smuggle an arbitrary extension (e.g. naming an
+// upload "x.svg" or "x.html" while declaring an allowed image mimetype) —
+// that combination previously let a stored .svg reach /uploads/avatars
+// with its original attacker-chosen extension, capable of embedded
+// <script> and served from the app's own origin.
+const ALLOWED_IMAGE_TYPES: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+};
 
 @Controller('instructors')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -48,12 +60,13 @@ export class InstructorsController {
         destination: 'uploads/avatars',
         filename: (req, file, cb) => {
           const userId = (req as { user?: CurrentUserPayload }).user?.id ?? 'unknown';
-          cb(null, `${userId}-${Date.now()}${extname(file.originalname)}`);
+          const extension = ALLOWED_IMAGE_TYPES[file.mimetype] ?? '.jpg';
+          cb(null, `${userId}-${Date.now()}${extension}`);
         },
       }),
       limits: { fileSize: 2 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        if (!ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
+        if (!(file.mimetype in ALLOWED_IMAGE_TYPES)) {
           cb(new BadRequestException('فقط فایل تصویری (jpg, png, webp) مجاز است.'), false);
           return;
         }
