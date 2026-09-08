@@ -8,5 +8,6 @@ import { GradesService } from './grades.service.js';
   imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
   controllers: [GradesController, MyGradesController],
   providers: [GradesService],
+  exports: [GradesService],
 })
 export class GradesModule {}

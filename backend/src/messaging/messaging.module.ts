@@ -18,5 +18,6 @@ import { ConversationsService } from './conversations.service.js';
     ConversationThreadController,
   ],
   providers: [AnnouncementsService, ConversationsService],
+  exports: [AnnouncementsService, ConversationsService],
 })
 export class MessagingModule {}

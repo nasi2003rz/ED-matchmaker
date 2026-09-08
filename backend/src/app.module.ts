@@ -17,6 +17,7 @@ import { AssignmentsModule } from './assignments/assignments.module.js';
 import { GradesModule } from './grades/grades.module.js';
 import { MessagingModule } from './messaging/messaging.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PaymentsModule } from './payments/payments.module.js';
     GradesModule,
     MessagingModule,
     PaymentsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

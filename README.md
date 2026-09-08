@@ -116,6 +116,14 @@ frontend/   Next.js (App Router) + TypeScript + Tailwind, PWA (Serwist)
 - Recording a payment (`PUT /api/classes/:id/payments/:paymentId/record`) adds to `paidAmount` and is rejected if it would exceed the invoice's `amount` — explicitly "no accounting system" (Section 6), so overpayment is refused rather than tracked as a credit.
 - Instructor side: `POST/PATCH/DELETE /api/classes/:id/payments`, `GET /api/classes/:id/payments` (grouped by enrolled student). Student side: `GET /api/payments/me`. Parent side: `GET /api/payments/me/parent` (aggregated across children, same pattern as Announcements/Grades). No payment gateway — this is tracking only (Section 6).
 
+## Student dashboard (CLAUDE.md Section 5.2)
+
+- `GET /api/dashboard/student` answers "what do I have today?" in one call: `nextSession`/`todaySessions` (new — no student-facing schedule existed before this step), `pendingHomework`/`pendingHomeworkCount`, `recentGrades`, `unreadMessagesCount`.
+- Built by **reusing** `AssignmentsService.listMine`, `GradesService.listMine`, and `ConversationsService.listForStudentOrParent` (each module now `exports` its service) rather than re-querying the same data — CLAUDE.md Section 12: "reuse existing infrastructure, do not duplicate it." Only the next-class/today's-classes query is genuinely new.
+- "Pending" homework = `ASSIGNED` or `MISSING` (needs the student to act) — `SUBMITTED`/`LATE`/`REVIEWED` are excluded since the ball is already in the instructor's court.
+- Frontend lives at `/home`, matching the pre-wired `STUDENT` nav entry (`components/layout/nav-config.ts`).
+- **Known inconsistency, left for Step 20 (UX polish) rather than fixed here:** an `AppShell`/`PageHeader`/`Section`/`StatCard` component set exists (used only by the Instructor's `/dashboard`) but every other page built since — including this one — uses a simpler standalone `max-w-md` layout instead. Retrofitting the shell everywhere is a cross-cutting change out of scope for a single step; `docs/ui-ux-plan.md` should be revisited then.
+
 ## Notes
 
 - Frontend dev/build use `--webpack` because Serwist (PWA/service-worker generation) does not yet support Turbopack.

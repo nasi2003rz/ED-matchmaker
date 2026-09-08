@@ -8,5 +8,6 @@ import { AssignmentsService } from './assignments.service.js';
   imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
   controllers: [AssignmentsController, HomeworkController],
   providers: [AssignmentsService],
+  exports: [AssignmentsService],
 })
 export class AssignmentsModule {}
